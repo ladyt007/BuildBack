@@ -1,0 +1,127 @@
+export type LatLng = { lat: number; lng: number };
+
+export type Place = LatLng & {
+  label: string; // e.g. "Macon, GA" or "31201"
+};
+
+export type Profile = {
+  id: string;
+  displayName: string;
+  email: string;
+  memberNumber: number;
+  joinedAt: string;
+  isAdmin: boolean;
+  homePlace?: Place | null;
+};
+
+export type BusinessStatus = 'open' | 'reopening' | 'struggling' | 'temporarily_closed';
+
+export type Business = {
+  id: string;
+  ownerId: string | null;
+  name: string;
+  category: string; // top-level category id, e.g. "beauty"
+  kind: string; // free text: "Barber shop", "Irish pub"
+  ownershipTags: string[];
+  description: string;
+  city: string;
+  state: string;
+  lat: number;
+  lng: number;
+  imageUrl: string | null;
+  supportUrl: string | null; // their own Stripe/PayPal/Cash App/GoFundMe link
+  website: string | null;
+  phone: string | null;
+  status: BusinessStatus;
+  isPro: boolean;
+  featuredUntil: string | null;
+  createdAt: string;
+  followerCount: number;
+  supporterCount: number;
+};
+
+export type StatusUpdate = {
+  id: string;
+  businessId: string;
+  body: string;
+  createdAt: string;
+};
+
+export type NeighborStatus = 'pending' | 'approved' | 'rejected' | 'fulfilled';
+
+export type NeighborRequest = {
+  id: string;
+  ownerId: string;
+  firstName: string;
+  title: string;
+  story: string;
+  need: string; // category id, e.g. "rent"
+  goalAmount: number | null;
+  fundraiserUrl: string;
+  city: string;
+  state: string;
+  lat: number;
+  lng: number;
+  imageUrl: string | null;
+  status: NeighborStatus;
+  createdAt: string;
+  supporterCount: number;
+};
+
+export type Wish = {
+  id: string;
+  userId: string;
+  category: string;
+  kind: string; // "Irish pub", "Black-owned barber"
+  note: string | null;
+  lat: number;
+  lng: number;
+  placeLabel: string;
+  createdAt: string;
+};
+
+/** Wishes for the same kind of place that are near each other. */
+export type WishGroup = {
+  key: string;
+  category: string;
+  kind: string;
+  count: number;
+  placeLabel: string;
+  distanceMiles: number | null;
+  wishedByMe: boolean;
+};
+
+export type SupportTarget = 'business' | 'neighbor';
+
+/** A self-reported gift. BuildBack never touches the money. */
+export type Support = {
+  id: string;
+  userId: string;
+  targetType: SupportTarget;
+  targetId: string;
+  amount: number | null;
+  createdAt: string;
+};
+
+export type Sponsor = {
+  id: string;
+  name: string;
+  tagline: string;
+  url: string;
+  city: string | null;
+  state: string | null;
+};
+
+export type CommunityStats = {
+  businessesHelped: number;
+  neighborsHelped: number;
+  members: number;
+  wishes: number;
+  businessesListed: number;
+};
+
+export type MyActivity = {
+  supports: Support[];
+  wishes: Wish[];
+  followingIds: string[];
+};

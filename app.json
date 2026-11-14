@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "BuildBack",
+    "slug": "buildback",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "buildback",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "app.buildback.community",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "BuildBack uses your location to show businesses, neighbors and wishes near you.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "app.buildback.community",
+      "permissions": ["ACCESS_COARSE_LOCATION"],
+      "adaptiveIcon": {
+        "backgroundColor": "#1F3BE0",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "name": "BuildBack",
+      "shortName": "BuildBack",
+      "description": "Build back communities — one store at a time, one person at a time.",
+      "themeColor": "#1F3BE0",
+      "backgroundColor": "#FAF8F3"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "BuildBack uses your location to show businesses, neighbors and wishes near you."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1F3BE0",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 160
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
