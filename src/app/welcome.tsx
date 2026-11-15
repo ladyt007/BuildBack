@@ -50,9 +50,16 @@ export default function WelcomeScreen() {
               label="I have an account"
               variant="secondary"
               onPress={() => go('/auth?mode=signin')}
-              style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
+              style={{ backgroundColor: '#FFFFFF' }}
+              textColor={Brand.blueDeep}
             />
-            <Button label="Just look around" variant="ghost" onPress={() => go('/')} style={{ opacity: 0.95 }} />
+            <Button
+              label="Just look around"
+              variant="ghost"
+              onPress={() => go('/')}
+              style={{ backgroundColor: 'rgba(11, 26, 140, 0.55)' }}
+              textColor="#FFFFFF"
+            />
           </View>
         </ScrollView>
       </SafeAreaView>

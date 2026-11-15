@@ -94,6 +94,7 @@ export function Button({
   disabled,
   style,
   small,
+  textColor,
 }: {
   label: string;
   onPress?: () => void;
@@ -103,6 +104,8 @@ export function Button({
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   small?: boolean;
+  /** Overrides the label colour, for buttons on a fixed background like the welcome screen. */
+  textColor?: string;
 }) {
   const colors = useColors();
   const bg = {
@@ -119,6 +122,7 @@ export function Button({
     ghost: colors.primary,
     danger: '#fff',
   }[variant];
+  const labelColor = textColor ?? fg;
   return (
     <Pressable
       accessibilityRole="button"
@@ -132,11 +136,11 @@ export function Button({
         style,
       ]}>
       {loading ? (
-        <ActivityIndicator color={fg} />
+        <ActivityIndicator color={labelColor} />
       ) : (
         <>
-          {icon ? <Ionicons name={icon} size={small ? 16 : 18} color={fg} /> : null}
-          <Text style={[styles.buttonText, small && styles.buttonTextSmall, { color: fg }]}>{label}</Text>
+          {icon ? <Ionicons name={icon} size={small ? 16 : 18} color={labelColor} /> : null}
+          <Text style={[styles.buttonText, small && styles.buttonTextSmall, { color: labelColor }]}>{label}</Text>
         </>
       )}
     </Pressable>
