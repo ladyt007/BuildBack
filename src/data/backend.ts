@@ -1,7 +1,10 @@
 import type { PhotoKind, PreparedPhoto } from '@/lib/photos';
 import type {
   Business,
+  BusinessClaim,
   CommunityStats,
+  Nomination,
+  NominatorRelationship,
   LatLng,
   MyActivity,
   NeighborRequest,
@@ -35,6 +38,28 @@ export type NewBusiness = Pick<
   | 'photos'
 >;
 
+/** A business added by someone who isn't the owner. The contact fields are private. */
+export type NewNomination = Omit<NewBusiness, 'supportUrl' | 'status'> & {
+  relationship: NominatorRelationship;
+  reason: string;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  contactSocial: string | null;
+};
+
+export type NewClaim = {
+  claimantName: string;
+  role: string;
+  email: string;
+  phone: string | null;
+  note: string | null;
+  /** The code from the invite we sent. A matching code hands over the listing right away. */
+  code: string | null;
+};
+
+export type NominationForReview = { business: Business; nomination: Nomination };
+
 export type NewNeighborRequest = Pick<
   NeighborRequest,
   'firstName' | 'title' | 'story' | 'need' | 'goalAmount' | 'fundraiserUrl' | 'city' | 'state' | 'lat' | 'lng'
@@ -66,6 +91,18 @@ export interface Backend {
   myBusinesses(): Promise<Business[]>;
   listStatusUpdates(businessId: string): Promise<StatusUpdate[]>;
   postStatusUpdate(businessId: string, body: string): Promise<StatusUpdate>;
+
+  // Nominations and claims
+  nominateBusiness(input: NewNomination): Promise<Business>;
+  /** Reviewers: nominations waiting for review, and approved ones whose owner hasn't claimed them yet. */
+  listNominations(): Promise<NominationForReview[]>;
+  reviewNomination(businessId: string, approve: boolean): Promise<void>;
+  markInvited(businessId: string): Promise<void>;
+  /** Returns 'claimed' when the invite code matched, otherwise 'pending' (a reviewer will verify). */
+  claimBusiness(businessId: string, claim: NewClaim): Promise<'claimed' | 'pending'>;
+  myClaim(businessId: string): Promise<BusinessClaim | null>;
+  listPendingClaims(): Promise<BusinessClaim[]>;
+  reviewClaim(claimId: string, approve: boolean): Promise<void>;
 
   // Neighbors in need
   listNeighbors(area: AreaQuery): Promise<NeighborRequest[]>;

@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, View } from 'r
 
 import { useCelebrate } from '@/components/celebration';
 import { Button, Field } from '@/components/ui';
-import { backend, type NewWish } from '@/data';
+import { backend, type NewNomination, type NewWish } from '@/data';
 import { groupWishes } from '@/data/shared';
 import { useColors } from '@/hooks/use-colors';
 import { Config } from '@/lib/config';
@@ -12,7 +12,7 @@ import { openExternal } from '@/lib/links';
 import { newlyEarnedBadges, summarizeImpact, type ImpactSummary } from '@/lib/gamification';
 import { loadJSON, saveJSON } from '@/lib/storage';
 import { Radius, Space } from '@/lib/theme';
-import type { CommunityStats, MyActivity, Place, Profile, SupportTarget } from '@/lib/types';
+import type { Business, CommunityStats, MyActivity, Place, Profile, SupportTarget } from '@/lib/types';
 
 type GiveTarget = { type: SupportTarget; id: string; name: string; url: string };
 
@@ -34,7 +34,12 @@ type AppState = {
   updateProfile: (patch: { displayName?: string; avatarUrl?: string | null }) => Promise<void>;
   setRadiusMiles: (r: number | null) => void;
   /** Returns false (and sends people to sign up) when they aren't signed in. */
-  requireAccount: () => boolean;
+  /**
+   * Returns true when signed in. Otherwise shows a friendly "join BuildBack" prompt explaining
+   * `reason` and returns false. With `leaveIfDismissed`, choosing "Not now" goes back a screen.
+   */
+  requireAccount: (reason?: string, options?: { leaveIfDismissed?: boolean }) => boolean;
+  nominate: (input: NewNomination) => Promise<Business>;
   toggleFollow: (businessId: string) => Promise<void>;
   give: (target: GiveTarget) => Promise<void>;
   addWish: (wish: NewWish) => Promise<void>;
@@ -47,7 +52,7 @@ function withArticle(kind: string): string {
   return /^[aeiou]/i.test(kind) ? `an ${kind}` : `a ${kind}`;
 }
 
-const emptyActivity: MyActivity = { supports: [], wishes: [], followingIds: [] };
+const emptyActivity: MyActivity = { supports: [], wishes: [], followingIds: [], nominationIds: [] };
 const AREA_KEY = 'buildback.area.v1';
 
 const AppContext = createContext<AppState | null>(null);
@@ -166,15 +171,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [persistArea, place]
   );
 
-  const requireAccount = useCallback(() => {
-    if (profile) return true;
-    router.push('/auth?mode=signup');
-    return false;
-  }, [profile]);
+  const [accountPrompt, setAccountPrompt] = useState<{ reason: string; leaveIfDismissed: boolean } | null>(null);
+
+  const requireAccount = useCallback(
+    (reason?: string, options?: { leaveIfDismissed?: boolean }) => {
+      if (profile) return true;
+      setAccountPrompt({
+        reason: reason ?? 'Create a free account to take part.',
+        leaveIfDismissed: !!options?.leaveIfDismissed,
+      });
+      return false;
+    },
+    [profile]
+  );
+
+  const nominate = useCallback(
+    async (input: NewNomination) => {
+      const before = impact;
+      const business = await backend.nominateBusiness(input);
+      const a = await backend.myActivity();
+      setActivity(a);
+      touch();
+      const earned = newlyEarnedBadges(before, summarizeImpact(a, profile));
+      celebrate({
+        style: 'confetti',
+        emoji: '🔭',
+        title: `Thanks for nominating ${business.name}!`,
+        message:
+          'Our team will review it and reach out to the owner so they can claim their free listing. You earned 10 builder points.',
+        extras: earned.map((b) => `${b.emoji} Badge earned: ${b.name}`),
+      });
+      return business;
+    },
+    [celebrate, impact, profile, touch]
+  );
 
   const toggleFollow = useCallback(
     async (businessId: string) => {
-      if (!requireAccount()) return;
+      if (!requireAccount('Create a free account to follow businesses and see their updates in your feed.')) return;
       const following = activity.followingIds.includes(businessId);
       setActivity((a) => ({
         ...a,
@@ -188,7 +222,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const give = useCallback(
     async (target: GiveTarget) => {
-      if (!requireAccount()) return;
+      if (!requireAccount('Create a free account so we can count your gift toward your impact and celebrate it with you.')) return;
       await openExternal(target.url);
       // When they come back, ask if they gave so we can celebrate it.
       setPendingGift(target);
@@ -230,7 +264,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const addWish = useCallback(
     async (wish: NewWish) => {
-      if (!requireAccount()) return;
+      if (!requireAccount('Create a free account to tell us what your community is missing.')) return;
       const before = impact;
       // Round the location (~1 mile) so a wish never pinpoints someone's home.
       const rounded = { ...wish, lat: Math.round(wish.lat * 70) / 70, lng: Math.round(wish.lng * 70) / 70 };
@@ -276,6 +310,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateProfile,
     setRadiusMiles,
     requireAccount,
+    nominate,
     toggleFollow,
     give,
     addWish,
@@ -286,8 +321,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={value}>
       {children}
+      <AccountPrompt
+        prompt={accountPrompt}
+        onChoose={(choice) => {
+          const leave = accountPrompt?.leaveIfDismissed;
+          setAccountPrompt(null);
+          if (choice === 'signup') router.push('/auth?mode=signup');
+          else if (choice === 'signin') router.push('/auth?mode=signin');
+          else if (leave && router.canGoBack()) router.back();
+        }}
+      />
       <GiftPrompt key={pendingGift ? `${pendingGift.type}-${pendingGift.id}` : 'none'} target={pendingGift} onAnswer={confirmGift} onDismiss={() => setPendingGift(null)} />
     </AppContext.Provider>
+  );
+}
+
+function AccountPrompt({
+  prompt,
+  onChoose,
+}: {
+  prompt: { reason: string } | null;
+  onChoose: (choice: 'signup' | 'signin' | 'dismiss') => void;
+}) {
+  const colors = useColors();
+  return (
+    <Modal visible={!!prompt} transparent animationType="slide" onRequestClose={() => onChoose('dismiss')}>
+      <View style={styles.sheetWrap}>
+        <View style={[styles.sheet, { backgroundColor: colors.card }]}>
+          <Text style={{ fontSize: 40 }}>🧱</Text>
+          <Text style={[styles.sheetTitle, { color: colors.text }]}>Join BuildBack — it’s free</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 16, lineHeight: 22 }}>{prompt?.reason}</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20 }}>
+            Members follow local businesses, help neighbors, make wishes and earn badges for building up their community.
+          </Text>
+          <Button label="Create a free account" onPress={() => onChoose('signup')} />
+          <Button label="I already have an account" variant="secondary" onPress={() => onChoose('signin')} />
+          <Button label="Not now" variant="ghost" onPress={() => onChoose('dismiss')} />
+        </View>
+      </View>
+    </Modal>
   );
 }
 

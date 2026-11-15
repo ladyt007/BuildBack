@@ -11,6 +11,9 @@ tell the world what their community is missing.
   reviewed before it's public.
 - ✨ **Wishes** — "No Black barber within 30 miles." "We want an Irish pub." Wishes are grouped by area so business
   owners and future entrepreneurs can see real demand.
+- 🔭 **Nominations** — anyone can add a business they love, even if it isn't theirs. The team reviews it, sends
+  the owner a claim link with a one-time code, and the owner takes over the listing in a minute. Owners without a
+  code can submit a claim that the team verifies by hand.
 - 🏆 **Impact** — points, levels, badges and celebrations (confetti and money rain) every time you give, plus
   community-wide totals.
 
@@ -52,12 +55,24 @@ scripts/          generate-logo.py redraws the logo, app icons and opening-anima
 1. Create a free project at [supabase.com](https://supabase.com).
 2. In the dashboard, open **SQL Editor → New query**, paste the contents of
    `supabase/migrations/0001_initial_schema.sql`, and click **Run**. Do the same with
-   `0002_photos.sql`, which adds profile and business photos.
+   `0002_photos.sql` (profile and business photos) and `0003_nominations_and_claims.sql`
+   (community nominations and claiming listings), in that order.
 3. Copy `.env.example` to `.env`, then fill in `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from
    **Project Settings → API**.
 4. Restart `npm run web`. The preview banner disappears once you're connected.
 5. Make yourself a reviewer: sign up in the app, then in **Table Editor → profiles** set `is_admin` to `true` on your
    row.
+
+## Reviewing (Me → Review requests)
+
+Reviewers (`is_admin` in `profiles`) see four queues:
+
+1. **New nominations** — approve real, local businesses; they go live as a "Community pick".
+2. **Invite the owner** — email, text or copy a ready-made message with the owner's claim link and invite code.
+   The link hands them the listing as soon as they sign up.
+3. **Claims to verify** — people who say they run a business but had no code. Contact the business using the
+   nomination's details or its public website (not the details in the claim) before approving.
+4. **Help requests** — check each story and fundraiser link before it's shared.
 
 ## Publish
 

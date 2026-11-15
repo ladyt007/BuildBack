@@ -44,7 +44,7 @@ export default function BusinessFormScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (ready && !profile) requireAccount();
+    if (ready && !profile) requireAccount('Create a free account to list your business so neighbors can find and support you.', { leaveIfDismissed: true });
   }, [ready, profile, requireAccount]);
 
   useEffect(() => {

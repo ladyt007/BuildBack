@@ -37,9 +37,50 @@ export type Business = {
   status: BusinessStatus;
   isPro: boolean;
   featuredUntil: string | null;
+  /** 'unclaimed' = nominated by the community and not yet taken over by its owner. */
+  claimStatus: ClaimStatus;
+  /** Nominated listings are reviewed before they're public. */
+  reviewStatus: ReviewStatus;
+  nominatedBy: string | null;
   createdAt: string;
   followerCount: number;
   supporterCount: number;
+};
+
+export type ClaimStatus = 'claimed' | 'unclaimed';
+export type ReviewStatus = 'pending' | 'approved' | 'rejected';
+
+export type NominatorRelationship = 'customer' | 'friend_family' | 'employee' | 'neighbor' | 'other';
+
+/** Private details from a nomination. Only the BuildBack team can see these. */
+export type Nomination = {
+  businessId: string;
+  businessName: string;
+  nominatedBy: string;
+  relationship: NominatorRelationship;
+  reason: string;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  contactSocial: string | null;
+  inviteCode: string;
+  invitedAt: string | null;
+  createdAt: string;
+};
+
+/** Someone asking to take over a listing that was nominated by the community. */
+export type BusinessClaim = {
+  id: string;
+  businessId: string;
+  businessName: string;
+  userId: string;
+  claimantName: string;
+  role: string;
+  email: string;
+  phone: string | null;
+  note: string | null;
+  status: ReviewStatus;
+  createdAt: string;
 };
 
 export type StatusUpdate = {
@@ -126,4 +167,6 @@ export type MyActivity = {
   supports: Support[];
   wishes: Wish[];
   followingIds: string[];
+  /** Businesses this person nominated (any review status). */
+  nominationIds: string[];
 };

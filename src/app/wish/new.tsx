@@ -22,7 +22,7 @@ export default function MakeWishScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (ready && !profile) requireAccount();
+    if (ready && !profile) requireAccount('Create a free account to tell us what your community is missing.', { leaveIfDismissed: true });
   }, [ready, profile, requireAccount]);
 
   // Default to the person's area until they change it.

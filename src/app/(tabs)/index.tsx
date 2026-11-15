@@ -150,8 +150,11 @@ export default function BusinessesScreen() {
             <Link href="/wish/new" asChild>
               <Button label="Make a wish" icon="sparkles" variant="gold" small />
             </Link>
+            <Link href="/business/nominate" asChild>
+              <Button label="Nominate a business" icon="telescope-outline" variant="secondary" small />
+            </Link>
             <Link href="/business/new" asChild>
-              <Button label="List a business" icon="add" variant="secondary" small />
+              <Button label="List my business" icon="add" variant="secondary" small />
             </Link>
           </Row>
         </Card>
@@ -190,6 +193,14 @@ export default function BusinessesScreen() {
             <Body style={{ textAlign: 'center' }}>Own a business? Get found by neighbors looking for you.</Body>
             <Link href="/business/new" asChild>
               <Button label="List your business — it’s free" icon="storefront" small />
+            </Link>
+          </Card>
+          <Card style={{ alignItems: 'center', backgroundColor: colors.accentSoft, borderColor: colors.accent }}>
+            <Body style={{ textAlign: 'center' }}>
+              Know a great business that isn’t here yet? Nominate it and we’ll invite the owner. 🔭
+            </Body>
+            <Link href="/business/nominate" asChild>
+              <Button label="Nominate a business" icon="telescope-outline" variant="gold" small />
             </Link>
           </Card>
         </View>

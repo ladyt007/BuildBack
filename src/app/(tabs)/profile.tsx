@@ -21,17 +21,28 @@ const REQUEST_STATUS: Record<NeighborRequest['status'], string> = {
   fulfilled: '🎉 Fulfilled',
 };
 
+function nominationStatus(b: Business): string {
+  if (b.reviewStatus === 'pending') return '⏳ Waiting for review';
+  if (b.reviewStatus === 'rejected') return 'Not approved';
+  if (b.claimStatus === 'claimed') return '🎉 Claimed by the owner';
+  return '🌟 Live · waiting for the owner to claim it';
+}
+
 export default function ProfileScreen() {
   const colors = useColors();
-  const { profile, signOut, dataVersion, updateProfile } = useApp();
+  const { profile, signOut, dataVersion, updateProfile, activity } = useApp();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [requests, setRequests] = useState<NeighborRequest[]>([]);
+  const [nominated, setNominated] = useState<Business[]>([]);
 
   useEffect(() => {
     if (!profile) return;
     backend.myBusinesses().then(setBusinesses).catch(() => {});
     backend.myNeighborRequests().then(setRequests).catch(() => {});
-  }, [profile, dataVersion]);
+    Promise.all(activity.nominationIds.map((id) => backend.getBusiness(id)))
+      .then((list) => setNominated(list.filter((b): b is Business => !!b)))
+      .catch(() => {});
+  }, [profile, dataVersion, activity.nominationIds]);
 
   if (!profile) {
     return (
@@ -91,6 +102,30 @@ export default function ProfileScreen() {
             </Link>
           ) : null}
         </Row>
+      </Card>
+
+      <Card>
+        <Text style={[styles.section, { color: colors.text }]}>My nominations</Text>
+        {nominated.length === 0 ? (
+          <Body muted>Know a great business that isn’t on BuildBack? Nominate it and we’ll invite the owner.</Body>
+        ) : (
+          nominated.map((b) => (
+            <Link key={b.id} href={`/business/${b.id}`} asChild>
+              <Pressable style={styles.item}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.itemTitle, { color: colors.text }]} numberOfLines={1}>
+                    {b.name}
+                  </Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{nominationStatus(b)}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </Pressable>
+            </Link>
+          ))
+        )}
+        <Link href="/business/nominate" asChild>
+          <Button label="Nominate a business" icon="telescope-outline" small variant="secondary" style={{ alignSelf: 'flex-start' }} />
+        </Link>
       </Card>
 
       <Card>

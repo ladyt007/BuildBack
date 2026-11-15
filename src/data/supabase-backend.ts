@@ -7,7 +7,17 @@ import { Platform } from 'react-native';
 
 import { Config } from '@/lib/config';
 import { boundingBox } from '@/lib/geo';
-import type { Business, NeighborRequest, Profile, Sponsor, StatusUpdate, Support, Wish } from '@/lib/types';
+import type {
+  Business,
+  BusinessClaim,
+  NeighborRequest,
+  Nomination,
+  Profile,
+  Sponsor,
+  StatusUpdate,
+  Support,
+  Wish,
+} from '@/lib/types';
 
 import type { AreaQuery, Backend, NewBusiness, NewNeighborRequest } from './backend';
 import { sortBusinesses, sortNeighbors, withinArea } from './shared';
@@ -55,6 +65,9 @@ const toBusiness = (r: Row): Business => ({
   status: r.status,
   isPro: r.is_pro,
   featuredUntil: r.featured_until,
+  claimStatus: r.claim_status ?? 'claimed',
+  reviewStatus: r.review_status ?? 'approved',
+  nominatedBy: r.nominated_by ?? null,
   createdAt: r.created_at,
   followerCount: r.follower_count,
   supporterCount: r.supporter_count,
@@ -81,6 +94,35 @@ const fromBusiness = (b: Partial<NewBusiness>): Row => {
   Object.keys(row).forEach((k) => row[k] === undefined && delete row[k]);
   return row;
 };
+
+const toNomination = (r: Row, businessName: string): Nomination => ({
+  businessId: r.business_id,
+  businessName,
+  nominatedBy: r.nominated_by,
+  relationship: r.relationship,
+  reason: r.reason,
+  contactName: r.contact_name,
+  contactEmail: r.contact_email,
+  contactPhone: r.contact_phone,
+  contactSocial: r.contact_social,
+  inviteCode: r.invite_code,
+  invitedAt: r.invited_at,
+  createdAt: r.created_at,
+});
+
+const toClaim = (r: Row): BusinessClaim => ({
+  id: r.id,
+  businessId: r.business_id,
+  businessName: r.businesses?.name ?? '',
+  userId: r.user_id,
+  claimantName: r.claimant_name,
+  role: r.role,
+  email: r.email,
+  phone: r.phone,
+  note: r.note,
+  status: r.status,
+  createdAt: r.created_at,
+});
 
 const toNeighbor = (r: Row): NeighborRequest => ({
   id: r.id,
@@ -260,6 +302,94 @@ export const supabaseBackend: Backend = {
     return (check(await supabase.from('businesses').select('*').eq('owner_id', id)) ?? []).map(toBusiness);
   },
 
+  async nominateBusiness(input) {
+    const { relationship, reason, contactName, contactEmail, contactPhone, contactSocial, ...listing } = input;
+    const row = one<Row>(
+      await supabase.rpc('nominate_business', {
+        listing: fromBusiness(listing),
+        private: {
+          relationship,
+          reason,
+          contact_name: contactName,
+          contact_email: contactEmail,
+          contact_phone: contactPhone,
+          contact_social: contactSocial,
+        },
+      })
+    );
+    return toBusiness(row);
+  },
+
+  async listNominations() {
+    const rows: Row[] = check(await supabase.from('business_nominations').select('*').order('created_at')) ?? [];
+    if (rows.length === 0) return [];
+    const businesses: Row[] =
+      check(
+        await supabase
+          .from('businesses')
+          .select('*')
+          .in('id', rows.map((r) => r.business_id))
+          .eq('claim_status', 'unclaimed')
+          .neq('review_status', 'rejected')
+      ) ?? [];
+    const byId = new Map(businesses.map((b) => [b.id, toBusiness(b)]));
+    return rows
+      .filter((r) => byId.has(r.business_id))
+      .map((r) => ({ business: byId.get(r.business_id)!, nomination: toNomination(r, byId.get(r.business_id)!.name) }));
+  },
+
+  async reviewNomination(businessId, approve) {
+    check(await supabase.rpc('review_nomination', { target: businessId, approve }));
+  },
+
+  async markInvited(businessId) {
+    check(await supabase.rpc('mark_invited', { target: businessId }));
+  },
+
+  async claimBusiness(businessId, claim) {
+    const result = check(
+      await supabase.rpc('claim_business', {
+        target: businessId,
+        claim: {
+          claimant_name: claim.claimantName,
+          role: claim.role,
+          email: claim.email,
+          phone: claim.phone,
+          note: claim.note,
+          code: claim.code,
+        },
+      })
+    );
+    return result === 'claimed' ? 'claimed' : 'pending';
+  },
+
+  async myClaim(businessId) {
+    const { data } = await supabase.auth.getSession();
+    const id = data.session?.user.id;
+    if (!id) return null;
+    const row = check(
+      await supabase
+        .from('business_claims')
+        .select('*, businesses(name)')
+        .eq('business_id', businessId)
+        .eq('user_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    );
+    return row ? toClaim(row) : null;
+  },
+
+  async listPendingClaims() {
+    const rows: Row[] =
+      check(await supabase.from('business_claims').select('*, businesses(name)').eq('status', 'pending').order('created_at')) ?? [];
+    return rows.map(toClaim);
+  },
+
+  async reviewClaim(claimId, approve) {
+    check(await supabase.rpc('review_claim', { target: claimId, approve }));
+  },
+
   async listStatusUpdates(businessId) {
     const rows = check(
       await supabase
@@ -343,11 +473,12 @@ export const supabaseBackend: Backend = {
   async myActivity() {
     const { data } = await supabase.auth.getSession();
     const id = data.session?.user.id;
-    if (!id) return { supports: [], wishes: [], followingIds: [] };
-    const [supports, wishes, follows] = await Promise.all([
+    if (!id) return { supports: [], wishes: [], followingIds: [], nominationIds: [] };
+    const [supports, wishes, follows, nominated] = await Promise.all([
       supabase.from('supports').select('*').eq('user_id', id),
       supabase.from('wishes').select('*').eq('user_id', id),
       supabase.from('follows').select('business_id').eq('user_id', id),
+      supabase.from('businesses').select('id').eq('nominated_by', id),
     ]);
     return {
       supports: (check(supports) ?? []).map(
@@ -362,6 +493,7 @@ export const supabaseBackend: Backend = {
       ),
       wishes: (check(wishes) ?? []).map(toWish),
       followingIds: (check(follows) ?? []).map((r: Row) => r.business_id),
+      nominationIds: (check(nominated) ?? []).map((r: Row) => r.id),
     };
   },
 

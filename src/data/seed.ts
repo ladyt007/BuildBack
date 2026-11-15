@@ -2,12 +2,12 @@
  * Sample data for demo mode. All businesses, people and sponsors here are made up.
  * Real cities are used so distances and "near you" features can be tried out.
  */
-import type { Business, NeighborRequest, Sponsor, StatusUpdate, Wish } from '@/lib/types';
+import type { Business, NeighborRequest, Nomination, Sponsor, StatusUpdate, Wish } from '@/lib/types';
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 const daysFromNow = (n: number) => new Date(Date.now() + n * 86400000).toISOString();
 
-type SeedBiz = Omit<Business, 'id' | 'ownerId' | 'createdAt' | 'isPro' | 'featuredUntil' | 'imageUrl' | 'photos' | 'website' | 'phone'> &
+type SeedBiz = Omit<Business, 'id' | 'ownerId' | 'createdAt' | 'isPro' | 'featuredUntil' | 'imageUrl' | 'photos' | 'website' | 'phone' | 'claimStatus' | 'reviewStatus' | 'nominatedBy'> &
   Partial<Pick<Business, 'isPro' | 'featuredUntil' | 'website' | 'phone'>>;
 
 const biz: SeedBiz[] = [
@@ -35,9 +35,15 @@ const biz: SeedBiz[] = [
   { name: 'Lake Street Laundromat', category: 'services', kind: 'Laundromat', ownershipTags: ['Immigrant-owned', 'Family-owned'], description: 'Rebuilt after the fires. Clean machines, free Wi-Fi and a kids’ corner.', city: 'Minneapolis', state: 'MN', lat: 44.9483, lng: -93.2615, supportUrl: 'https://example.com/support/lake-street', status: 'reopening', followerCount: 95, supporterCount: 39 },
 ];
 
+/** Community-nominated businesses whose owners haven't claimed them yet. */
+const UNCLAIMED = new Set(['b8', 'b17']);
+
 export const seedBusinesses: Business[] = biz.map((b, i) => ({
   id: `b${i + 1}`,
   ownerId: null,
+  claimStatus: UNCLAIMED.has(`b${i + 1}`) ? 'unclaimed' : 'claimed',
+  reviewStatus: 'approved',
+  nominatedBy: UNCLAIMED.has(`b${i + 1}`) ? 'seed-nominator' : null,
   createdAt: daysAgo(120 - i * 4),
   imageUrl: null,
   photos: [],
@@ -47,6 +53,80 @@ export const seedBusinesses: Business[] = biz.map((b, i) => ({
   featuredUntil: b.featuredUntil ?? null,
   ...b,
 }));
+
+// A nomination still waiting for review, so the review queue has something in it.
+seedBusinesses.push({
+  id: 'b-pending-1',
+  ownerId: null,
+  name: 'Auntie Pearl’s Hot Tamales',
+  category: 'food',
+  kind: 'Food stand',
+  ownershipTags: ['Black-owned', 'Woman-owned'],
+  description: 'Delta-style hot tamales sold out of a little stand on Saturdays. Pearl has been feeding this town for 30 years.',
+  city: 'Fort Valley',
+  state: 'GA',
+  lat: 32.5538,
+  lng: -83.8874,
+  imageUrl: null,
+  photos: [],
+  supportUrl: null,
+  website: null,
+  phone: null,
+  status: 'open',
+  isPro: false,
+  featuredUntil: null,
+  claimStatus: 'unclaimed',
+  reviewStatus: 'pending',
+  nominatedBy: 'seed-nominator',
+  createdAt: daysAgo(0),
+  followerCount: 0,
+  supporterCount: 0,
+});
+
+export const seedNominations: Nomination[] = [
+  {
+    businessId: 'b8',
+    businessName: 'Farish Street Books',
+    nominatedBy: 'seed-nominator',
+    relationship: 'customer',
+    reason: 'My kids found their favorite books here. The owner runs story hour for free every Saturday.',
+    contactName: 'Ms. Lorraine',
+    contactEmail: 'hello@example.com',
+    contactPhone: '(601) 555-0142',
+    contactSocial: '@farishstreetbooks',
+    inviteCode: 'BOOKS7',
+    invitedAt: null,
+    createdAt: daysAgo(12),
+  },
+  {
+    businessId: 'b17',
+    businessName: 'The Brass Shamrock',
+    nominatedBy: 'seed-nominator',
+    relationship: 'neighbor',
+    reason: 'Best fish and chips in Boston and they host the neighborhood trivia fundraiser.',
+    contactName: null,
+    contactEmail: null,
+    contactPhone: '(617) 555-0190',
+    contactSocial: '@brassshamrock',
+    inviteCode: 'PINT42',
+    invitedAt: daysAgo(3),
+    createdAt: daysAgo(20),
+  },
+  {
+    businessId: 'b-pending-1',
+    businessName: 'Auntie Pearl’s Hot Tamales',
+    nominatedBy: 'seed-nominator',
+    relationship: 'friend_family',
+    reason: 'Pearl deserves to be found! People drive in from Macon for her tamales, but she has no website.',
+    contactName: 'Pearl Johnson',
+    contactEmail: null,
+    contactPhone: '(478) 555-0117',
+    contactSocial: null,
+    inviteCode: 'PEARL9',
+    invitedAt: null,
+    createdAt: daysAgo(0),
+  },
+];
 
 export const seedStatusUpdates: StatusUpdate[] = [
   { id: 'u1', businessId: 'b1', body: 'We’re fully open again! Saturday hours are back, 8am–6pm. Thank you to everyone who helped us keep the lights on. 💈', createdAt: daysAgo(2) },

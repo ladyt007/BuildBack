@@ -119,9 +119,14 @@ export default function WishesScreen() {
             <Body>
               These wishes are real demand. List your business and we’ll let neighbors who asked for it know you’re here.
             </Body>
-            <Link href="/business/new" asChild>
-              <Button label="List a business" icon="storefront" small style={{ alignSelf: 'flex-start' }} />
-            </Link>
+            <Row style={{ flexWrap: 'wrap' }}>
+              <Link href="/business/new" asChild>
+                <Button label="List a business" icon="storefront" small />
+              </Link>
+              <Link href="/business/nominate" asChild>
+                <Button label="Nominate one nearby" icon="telescope-outline" small variant="secondary" />
+              </Link>
+            </Row>
           </Card>
         </View>
       )}

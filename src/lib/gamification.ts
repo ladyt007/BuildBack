@@ -16,6 +16,7 @@ export const POINTS = {
   supportNeighbor: 15,
   wish: 3,
   follow: 1,
+  nominate: 10,
 };
 
 export type Badge = {
@@ -36,6 +37,7 @@ export type ImpactSummary = {
   totalGiven: number;
   wishes: number;
   following: number;
+  nominations: number;
   badges: Badge[];
 };
 
@@ -51,13 +53,15 @@ export function summarizeImpact(activity: MyActivity, profile: Profile | null): 
   const totalGiven = activity.supports.reduce((sum, s) => sum + (s.amount ?? 0), 0);
   const wishes = activity.wishes.length;
   const following = activity.followingIds.length;
+  const nominations = activity.nominationIds?.length ?? 0;
 
   const points =
     (profile ? POINTS.joined : 0) +
     businessGifts * POINTS.supportBusiness +
     neighborGifts * POINTS.supportNeighbor +
     wishes * POINTS.wish +
-    following * POINTS.follow;
+    following * POINTS.follow +
+    nominations * POINTS.nominate;
 
   let levelIndex = 0;
   LEVELS.forEach((l, i) => {
@@ -75,6 +79,7 @@ export function summarizeImpact(activity: MyActivity, profile: Profile | null): 
     { id: 'shop-local', name: 'Shop Local', emoji: '🛍️', description: 'Supported 3 different businesses', earned: businessesHelped >= 3 },
     { id: 'neighbors-keeper', name: 'Neighbor’s Keeper', emoji: '💛', description: 'Helped a neighbor in need', earned: neighborsHelped >= 1 },
     { id: 'wish-maker', name: 'Wish Maker', emoji: '✨', description: 'Told us what your community is missing', earned: wishes >= 1 },
+    { id: 'scout', name: 'Talent Scout', emoji: '🔭', description: 'Nominated a business you love', earned: nominations >= 1 },
     { id: 'fan', name: 'Biggest Fan', emoji: '📣', description: 'Followed 5 businesses', earned: following >= 5 },
     { id: 'champion', name: 'Community Champion', emoji: '🏆', description: 'Gave 10 times', earned: activity.supports.length >= 10 },
   ];
@@ -89,6 +94,7 @@ export function summarizeImpact(activity: MyActivity, profile: Profile | null): 
     totalGiven,
     wishes,
     following,
+    nominations,
     badges,
   };
 }

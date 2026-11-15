@@ -14,7 +14,7 @@ import { businessCategory } from '@/lib/categories';
 import { distanceMiles, formatDistance } from '@/lib/geo';
 import { openExternal, shareLink } from '@/lib/links';
 import { Brand, Space } from '@/lib/theme';
-import type { Business, StatusUpdate } from '@/lib/types';
+import type { Business, BusinessClaim, StatusUpdate } from '@/lib/types';
 import { useApp } from '@/state/app-state';
 
 function timeAgo(iso: string): string {
@@ -33,15 +33,17 @@ export default function BusinessScreen() {
   const { profile, place, activity, toggleFollow, give, dataVersion, touch } = useApp();
   const [business, setBusiness] = useState<Business | null | undefined>(undefined);
   const [updates, setUpdates] = useState<StatusUpdate[]>([]);
+  const [claim, setClaim] = useState<BusinessClaim | null>(null);
   const [draft, setDraft] = useState('');
   const [posting, setPosting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([backend.getBusiness(id), backend.listStatusUpdates(id)]).then(([b, u]) => {
+    Promise.all([backend.getBusiness(id), backend.listStatusUpdates(id), backend.myClaim(id)]).then(([b, u, c]) => {
       if (cancelled) return;
       setBusiness(b);
       setUpdates(u);
+      setClaim(c);
     });
     return () => {
       cancelled = true;
@@ -102,10 +104,34 @@ export default function BusinessScreen() {
         <Pill label={status.label} color={status.color} />
         {isFeatured(business) ? <Pill label="★ Featured" color={Brand.gold} textColor="#1C1717" /> : null}
         {business.isPro ? <Pill label="✓ Verified" color={colors.primary} /> : null}
+        {business.claimStatus === 'unclaimed' ? <Pill label="Community pick" color={colors.muted} textColor={colors.text} /> : null}
         {business.ownershipTags.map((t) => (
           <Pill key={t} label={t} color={colors.muted} textColor={colors.text} />
         ))}
       </Row>
+
+      {business.reviewStatus === 'pending' ? (
+        <Card style={{ borderColor: colors.accent }}>
+          <Body>⏳ Thanks for your nomination! Our team is reviewing it. Only you can see this listing for now.</Body>
+        </Card>
+      ) : null}
+
+      {business.claimStatus === 'unclaimed' && business.reviewStatus === 'approved' ? (
+        <Card style={{ backgroundColor: colors.accentSoft, borderColor: colors.accent }}>
+          <Text style={[styles.section, { color: colors.text, fontSize: 17 }]}>🌟 Community pick</Text>
+          <Body>
+            A neighbor nominated this business because they love it. The owner hasn’t claimed this listing yet, so
+            details may be incomplete.
+          </Body>
+          {claim?.status === 'pending' ? (
+            <Body muted>📨 Your claim is being reviewed. We’ll let you know soon.</Body>
+          ) : (
+            <Link href={{ pathname: '/business/claim', params: { id: business.id } }} asChild>
+              <Button label="Is this your business? Claim it free" icon="key-outline" small style={{ alignSelf: 'flex-start' }} />
+            </Link>
+          )}
+        </Card>
+      ) : null}
 
       <Body>{business.description}</Body>
 

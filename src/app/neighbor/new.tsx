@@ -29,7 +29,7 @@ export default function AskForHelpScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (ready && !profile) requireAccount();
+    if (ready && !profile) requireAccount('Create a free account to ask your community for help. Your request stays private until our team reviews it.', { leaveIfDismissed: true });
   }, [ready, profile, requireAccount]);
 
   // Default to the person's name and area until they change them.

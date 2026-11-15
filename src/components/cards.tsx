@@ -79,6 +79,10 @@ export function BusinessCard({ business, center }: { business: Business; center:
         </Text>
         <View style={[styles.row, { flexWrap: 'wrap', gap: 6 }]}>
           <Pill label={status.label} color={status.color} />
+          {business.reviewStatus === 'pending' ? <Pill label="⏳ In review" color={colors.accentSoft} textColor={colors.text} /> : null}
+          {business.claimStatus === 'unclaimed' && business.reviewStatus !== 'pending' ? (
+            <Pill label="🌟 Community pick" color={colors.accentSoft} textColor={colors.text} />
+          ) : null}
           {business.ownershipTags.slice(0, 2).map((t) => (
             <Pill key={t} label={t} color={colors.muted} textColor={colors.text} />
           ))}

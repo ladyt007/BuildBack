@@ -78,6 +78,7 @@ export default function ImpactScreen() {
             <Body>🏪 Support a business: +{POINTS.supportBusiness}</Body>
             <Body>💛 Help a neighbor: +{POINTS.supportNeighbor}</Body>
             <Body>✨ Make a wish: +{POINTS.wish}</Body>
+            <Body>🔭 Nominate a business: +{POINTS.nominate}</Body>
             <Body>❤️ Follow a business: +{POINTS.follow}</Body>
             <Body muted>Levels: {LEVELS.map((l) => `${l.emoji} ${l.name}`).join(' → ')}</Body>
           </Card>

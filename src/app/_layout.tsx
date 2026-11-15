@@ -79,6 +79,8 @@ export default function RootLayout() {
               <Stack.Screen name="auth" options={{ title: '', presentation: 'modal' }} />
               <Stack.Screen name="business/[id]" options={{ title: '' }} />
               <Stack.Screen name="business/new" options={{ title: 'List a business', presentation: 'modal' }} />
+              <Stack.Screen name="business/nominate" options={{ title: 'Nominate a business', presentation: 'modal' }} />
+              <Stack.Screen name="business/claim" options={{ title: 'Claim your business' }} />
               <Stack.Screen name="neighbor/[id]" options={{ title: '' }} />
               <Stack.Screen name="neighbor/new" options={{ title: 'Ask for help', presentation: 'modal' }} />
               <Stack.Screen name="wish/new" options={{ title: 'Make a wish', presentation: 'modal' }} />
