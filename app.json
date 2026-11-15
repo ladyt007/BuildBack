@@ -19,7 +19,7 @@
       "package": "app.buildback.community",
       "permissions": ["ACCESS_COARSE_LOCATION"],
       "adaptiveIcon": {
-        "backgroundColor": "#1F3BE0",
+        "backgroundColor": "#0B1A8C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -46,9 +46,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#1F3BE0",
+          "backgroundColor": "#0B1A8C",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 160
+          "imageWidth": 200
         }
       ]
     ],

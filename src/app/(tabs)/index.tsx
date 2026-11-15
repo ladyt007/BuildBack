@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
 
 import { BusinessCard, CommunityBanner, MyProgressStrip, SponsorCard } from '@/components/cards';
 import { LocationBar } from '@/components/location-bar';
@@ -20,6 +20,7 @@ type Filter = { kind: 'all' } | { kind: 'following' } | { kind: 'category'; id: 
 
 export default function BusinessesScreen() {
   const colors = useColors();
+  const scheme = useColorScheme();
   const { place, radiusMiles, activity, profile, dataVersion } = useApp();
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
   const [fellBackToNationwide, setFellBack] = useState(false);
@@ -65,17 +66,19 @@ export default function BusinessesScreen() {
 
   return (
     <Screen>
-      <Row style={{ justifyContent: 'space-between' }}>
-        <Row>
-          <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
-          <View>
-            <Text style={[styles.brand, { color: colors.text }]}>BuildBack</Text>
-            <Text style={[styles.tagline, { color: colors.textSecondary }]}>
-              One store at a time. One person at a time.
-            </Text>
-          </View>
-        </Row>
-      </Row>
+      <View style={{ gap: 4 }}>
+        <Image
+          source={
+            scheme === 'dark' ? require('@/assets/images/wordmark-dark.png') : require('@/assets/images/wordmark.png')
+          }
+          style={styles.wordmark}
+          contentFit="contain"
+          accessibilityLabel="BuildBack"
+        />
+        <Text style={[styles.tagline, { color: colors.textSecondary }]}>
+          One store at a time. One person at a time.
+        </Text>
+      </View>
 
       {isDemoMode ? (
         <View style={[styles.demo, { backgroundColor: colors.accentSoft }]}>
@@ -196,8 +199,8 @@ export default function BusinessesScreen() {
 }
 
 const styles = StyleSheet.create({
-  logo: { width: 44, height: 44, borderRadius: 12 },
-  brand: { fontSize: 24, fontWeight: '900', letterSpacing: -0.5 },
+  // The wordmark image is 1497 × 271.
+  wordmark: { width: 232, height: 42 },
   tagline: { fontSize: 13 },
   demo: { borderRadius: Radius.sm, padding: Space.sm },
   joinTitle: { fontSize: 18, fontWeight: '800' },

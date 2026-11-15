@@ -28,7 +28,7 @@ export default function WelcomeScreen() {
     <LinearGradient colors={[Brand.blueDeep, Brand.blue, '#7F6A3A', Brand.gold]} locations={[0, 0.45, 0.8, 1]} style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
-          <Image source={require('@/assets/images/intro.gif')} style={styles.logo} contentFit="cover" />
+          <Image source={require('@/assets/images/splash-icon.png')} style={styles.logo} contentFit="contain" accessibilityLabel="BuildBack logo" />
           <Text style={styles.title}>BuildBack</Text>
           <Text style={styles.tagline}>Build back communities —{'\n'}one store at a time, one person at a time.</Text>
 
@@ -62,7 +62,7 @@ export default function WelcomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, alignItems: 'center', padding: Space.xl, gap: Space.lg, maxWidth: 520, width: '100%', alignSelf: 'center' },
-  logo: { width: 120, height: 120, borderRadius: 30, marginTop: Space.xl },
+  logo: { width: 150, height: 150, marginTop: Space.lg },
   title: { color: '#fff', fontSize: 40, fontWeight: '900', letterSpacing: -1 },
   tagline: { color: '#F3F0FF', fontSize: 18, textAlign: 'center', lineHeight: 25, fontWeight: '600' },
   points: { gap: Space.md, alignSelf: 'stretch', marginTop: Space.md },
