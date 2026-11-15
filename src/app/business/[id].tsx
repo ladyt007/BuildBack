@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { STATUS_LABEL } from '@/components/cards';
+import { PhotoGallery } from '@/components/photos';
 import { Body, Button, Card, EmptyState, Field, Initials, Pill, Row, Screen, Title } from '@/components/ui';
 import { backend } from '@/data';
 import { isFeatured } from '@/data/shared';
@@ -107,6 +108,8 @@ export default function BusinessScreen() {
       </Row>
 
       <Body>{business.description}</Body>
+
+      <PhotoGallery photos={business.photos ?? []} />
 
       <Text style={{ color: colors.textSecondary }}>
         ❤️ {business.followerCount} followers · 💛 {business.supporterCount} supporters

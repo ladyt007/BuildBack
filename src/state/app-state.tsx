@@ -31,6 +31,7 @@ type AppState = {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   setPlace: (place: Place | null) => Promise<void>;
+  updateProfile: (patch: { displayName?: string; avatarUrl?: string | null }) => Promise<void>;
   setRadiusMiles: (r: number | null) => void;
   /** Returns false (and sends people to sign up) when they aren't signed in. */
   requireAccount: () => boolean;
@@ -150,6 +151,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [persistArea, profile, radiusMiles]
   );
 
+  const updateProfile = useCallback(
+    async (patch: { displayName?: string; avatarUrl?: string | null }) => {
+      setProfile(await backend.updateProfile(patch));
+    },
+    []
+  );
+
   const setRadiusMiles = useCallback(
     (r: number | null) => {
       setRadiusState(r);
@@ -265,6 +273,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     signIn,
     signOut,
     setPlace,
+    updateProfile,
     setRadiusMiles,
     requireAccount,
     toggleFollow,

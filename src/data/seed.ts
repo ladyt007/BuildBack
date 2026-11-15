@@ -7,7 +7,7 @@ import type { Business, NeighborRequest, Sponsor, StatusUpdate, Wish } from '@/l
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 const daysFromNow = (n: number) => new Date(Date.now() + n * 86400000).toISOString();
 
-type SeedBiz = Omit<Business, 'id' | 'ownerId' | 'createdAt' | 'isPro' | 'featuredUntil' | 'imageUrl' | 'website' | 'phone'> &
+type SeedBiz = Omit<Business, 'id' | 'ownerId' | 'createdAt' | 'isPro' | 'featuredUntil' | 'imageUrl' | 'photos' | 'website' | 'phone'> &
   Partial<Pick<Business, 'isPro' | 'featuredUntil' | 'website' | 'phone'>>;
 
 const biz: SeedBiz[] = [
@@ -40,6 +40,7 @@ export const seedBusinesses: Business[] = biz.map((b, i) => ({
   ownerId: null,
   createdAt: daysAgo(120 - i * 4),
   imageUrl: null,
+  photos: [],
   website: b.website ?? null,
   phone: b.phone ?? null,
   isPro: b.isPro ?? false,

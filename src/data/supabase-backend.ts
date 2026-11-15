@@ -30,6 +30,7 @@ const toProfile = (r: Row): Profile => ({
   memberNumber: Number(r.member_number),
   joinedAt: r.joined_at,
   isAdmin: r.is_admin,
+  avatarUrl: r.avatar_url ?? null,
   homePlace:
     r.home_lat != null && r.home_lng != null ? { lat: r.home_lat, lng: r.home_lng, label: r.home_label ?? '' } : null,
 });
@@ -47,6 +48,7 @@ const toBusiness = (r: Row): Business => ({
   lat: r.lat,
   lng: r.lng,
   imageUrl: r.image_url,
+  photos: r.photos ?? [],
   supportUrl: r.support_url,
   website: r.website,
   phone: r.phone,
@@ -70,6 +72,7 @@ const fromBusiness = (b: Partial<NewBusiness>): Row => {
     lat: b.lat,
     lng: b.lng,
     image_url: b.imageUrl,
+    photos: b.photos,
     support_url: b.supportUrl,
     website: b.website,
     phone: b.phone,
@@ -157,6 +160,14 @@ function inArea<Q extends { gte: any; lte: any }>(query: Q, area: AreaQuery): Q 
 }
 
 const LIST_LIMIT = 300;
+const PHOTO_BUCKET = 'photos';
+
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
 
 export const supabaseBackend: Backend = {
   async currentProfile() {
@@ -198,12 +209,24 @@ export const supabaseBackend: Backend = {
     const id = await userId();
     const row: Row = {};
     if (patch.displayName !== undefined) row.display_name = patch.displayName;
+    if (patch.avatarUrl !== undefined) row.avatar_url = patch.avatarUrl;
     if (patch.homePlace !== undefined) {
       row.home_lat = patch.homePlace?.lat ?? null;
       row.home_lng = patch.homePlace?.lng ?? null;
       row.home_label = patch.homePlace?.label ?? null;
     }
     return toProfile(one(await supabase.from('profiles').update(row).eq('id', id).select().single()));
+  },
+
+  async uploadPhoto(photo, kind) {
+    const id = await userId();
+    // Each person can only write inside their own folder (see the storage policies).
+    const path = `${id}/${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const { error } = await supabase.storage
+      .from(PHOTO_BUCKET)
+      .upload(path, base64ToBytes(photo.base64), { contentType: 'image/jpeg', upsert: false });
+    if (error) throw new Error(error.message);
+    return supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
   },
 
   async listBusinesses(area) {

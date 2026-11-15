@@ -119,6 +119,12 @@ export const demoBackend: Backend = {
     return user.profile;
   },
 
+  async uploadPhoto(photo) {
+    await me();
+    // Demo mode keeps the (already compressed) photo on this device.
+    return `data:image/jpeg;base64,${photo.base64}`;
+  },
+
   async listBusinesses(area) {
     const d = await db();
     return sortBusinesses(withinArea(d.businesses, area), area.center);
@@ -133,6 +139,7 @@ export const demoBackend: Backend = {
     const profile = await me();
     const business: Business = {
       ...input,
+      photos: input.photos ?? [],
       id: newId(),
       ownerId: profile.id,
       isPro: false,

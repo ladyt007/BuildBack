@@ -1,3 +1,4 @@
+import type { PhotoKind, PreparedPhoto } from '@/lib/photos';
 import type {
   Business,
   CommunityStats,
@@ -31,6 +32,7 @@ export type NewBusiness = Pick<
   | 'phone'
   | 'status'
   | 'imageUrl'
+  | 'photos'
 >;
 
 export type NewNeighborRequest = Pick<
@@ -51,7 +53,10 @@ export interface Backend {
   signUp(displayName: string, email: string, password: string): Promise<Profile>;
   signIn(email: string, password: string): Promise<Profile>;
   signOut(): Promise<void>;
-  updateProfile(patch: { displayName?: string; homePlace?: Place | null }): Promise<Profile>;
+  updateProfile(patch: { displayName?: string; homePlace?: Place | null; avatarUrl?: string | null }): Promise<Profile>;
+
+  /** Stores a photo and returns the address to show it from. */
+  uploadPhoto(photo: PreparedPhoto, kind: PhotoKind): Promise<string>;
 
   // Businesses
   listBusinesses(area: AreaQuery): Promise<Business[]>;

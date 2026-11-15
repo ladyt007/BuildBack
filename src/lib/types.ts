@@ -12,6 +12,7 @@ export type Profile = {
   joinedAt: string;
   isAdmin: boolean;
   homePlace?: Place | null;
+  avatarUrl?: string | null;
 };
 
 export type BusinessStatus = 'open' | 'reopening' | 'struggling' | 'temporarily_closed';
@@ -28,7 +29,8 @@ export type Business = {
   state: string;
   lat: number;
   lng: number;
-  imageUrl: string | null;
+  imageUrl: string | null; // cover photo
+  photos: string[]; // gallery, up to MAX_BUSINESS_PHOTOS
   supportUrl: string | null; // their own Stripe/PayPal/Cash App/GoFundMe link
   website: string | null;
   phone: string | null;

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { useCelebrate } from '@/components/celebration';
+import { CoverPhotoField, GalleryField } from '@/components/photos';
 import { PlaceField, splitPlaceLabel } from '@/components/place-field';
 import { Body, Button, Chip, Field, Screen } from '@/components/ui';
 import { backend, type NewBusiness } from '@/data';
@@ -32,6 +33,8 @@ export default function BusinessFormScreen() {
   const [kind, setKind] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [place, setPlace] = useState<Place | null>(null);
   const [status, setStatus] = useState<BusinessStatus>('open');
   const [supportUrl, setSupportUrl] = useState('');
@@ -53,6 +56,8 @@ export default function BusinessFormScreen() {
       setKind(b.kind);
       setTags(b.ownershipTags);
       setDescription(b.description);
+      setImageUrl(b.imageUrl);
+      setPhotos(b.photos ?? []);
       setPlace({ lat: b.lat, lng: b.lng, label: `${b.city}, ${b.state}` });
       setStatus(b.status);
       setSupportUrl(b.supportUrl ?? '');
@@ -84,7 +89,8 @@ export default function BusinessFormScreen() {
       supportUrl: supportUrl.trim() || null,
       website: website.trim() || null,
       phone: phone.trim() || null,
-      imageUrl: null,
+      imageUrl,
+      photos,
     };
     setSaving(true);
     try {
@@ -166,6 +172,9 @@ export default function BusinessFormScreen() {
         multiline
         maxLength={600}
       />
+
+      <CoverPhotoField value={imageUrl} onChange={setImageUrl} />
+      <GalleryField value={photos} onChange={setPhotos} />
 
       <PlaceField label="Location" value={place} onChange={setPlace} hint="We show your city and approximate distance, not your street address." />
 

@@ -44,6 +44,14 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "BuildBack uses your photos so you can add a profile picture and photos of your business.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#0B1A8C",

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { STATUS_LABEL } from '@/components/cards';
+import { AvatarPicker } from '@/components/photos';
 import { SettingsCard } from '@/components/settings-card';
 import { Body, Button, Card, Pill, Row, Screen, Title, type IconName } from '@/components/ui';
 import { backend } from '@/data';
@@ -22,7 +23,7 @@ const REQUEST_STATUS: Record<NeighborRequest['status'], string> = {
 
 export default function ProfileScreen() {
   const colors = useColors();
-  const { profile, signOut, dataVersion } = useApp();
+  const { profile, signOut, dataVersion, updateProfile } = useApp();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [requests, setRequests] = useState<NeighborRequest[]>([]);
 
@@ -50,13 +51,20 @@ export default function ProfileScreen() {
 
   return (
     <Screen>
-      <View style={{ gap: 2 }}>
-        <Title>{profile.displayName || 'Builder'}</Title>
-        <Body muted>
-          Builder #{profile.memberNumber.toLocaleString()} · joined{' '}
-          {new Date(profile.joinedAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-        </Body>
-      </View>
+      <Row style={{ gap: Space.lg }}>
+        <AvatarPicker
+          uri={profile.avatarUrl}
+          name={profile.displayName}
+          onChange={(url) => updateProfile({ avatarUrl: url })}
+        />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Title>{profile.displayName || 'Builder'}</Title>
+          <Body muted>
+            Builder #{profile.memberNumber.toLocaleString()} · joined{' '}
+            {new Date(profile.joinedAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+          </Body>
+        </View>
+      </Row>
 
       <Card>
         <Text style={[styles.section, { color: colors.text }]}>My businesses</Text>

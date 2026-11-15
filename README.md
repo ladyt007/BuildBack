@@ -51,7 +51,8 @@ scripts/          generate-logo.py redraws the logo, app icons and opening-anima
 
 1. Create a free project at [supabase.com](https://supabase.com).
 2. In the dashboard, open **SQL Editor → New query**, paste the contents of
-   `supabase/migrations/0001_initial_schema.sql`, and click **Run**.
+   `supabase/migrations/0001_initial_schema.sql`, and click **Run**. Do the same with
+   `0002_photos.sql`, which adds profile and business photos.
 3. Copy `.env.example` to `.env`, then fill in `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from
    **Project Settings → API**.
 4. Restart `npm run web`. The preview banner disappears once you're connected.
@@ -98,7 +99,7 @@ business in Supabase. Automating this with a Stripe webhook is on the roadmap.
 
 ## Roadmap
 
-- [ ] Photo uploads for businesses and neighbors (Supabase Storage)
+- [ ] Photos on help requests
 - [ ] Stripe webhook to switch on Featured/Pro automatically after payment
 - [ ] Pro "demand insights" dashboard for business owners
 - [ ] Notify people who wished for something when a matching business opens nearby
