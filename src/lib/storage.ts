@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const WELCOMED_KEY = 'buildback.welcomed.v1';
+/** false when the person turned off the opening animation (Me tab). */
+export const INTRO_ENABLED_KEY = 'buildback.intro-enabled.v1';
 
 export async function loadJSON<T>(key: string, fallback: T): Promise<T> {
   try {

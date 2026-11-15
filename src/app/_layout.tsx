@@ -8,7 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { CelebrationProvider } from '@/components/celebration';
 import { IntroAnimation } from '@/components/intro-animation';
 import { Colors } from '@/lib/theme';
-import { loadJSON, WELCOMED_KEY } from '@/lib/storage';
+import { INTRO_ENABLED_KEY, loadJSON, WELCOMED_KEY } from '@/lib/storage';
 import { AppProvider, useApp } from '@/state/app-state';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -35,12 +35,16 @@ function Gate() {
 /** Plays the brick-building intro over the app while it loads. */
 function Intro() {
   const { ready } = useApp();
-  const [showing, setShowing] = useState(true);
+  // null while we check whether the person turned the animation off.
+  const [showing, setShowing] = useState<boolean | null>(null);
   const done = useCallback(() => setShowing(false), []);
 
   useEffect(() => {
-    // The native splash is a plain blue screen; swap to the animation right away.
-    SplashScreen.hideAsync().catch(() => {});
+    loadJSON<boolean>(INTRO_ENABLED_KEY, true).then((enabled) => {
+      setShowing(enabled);
+      // The native splash is a plain blue screen; swap to the animation (or the app) right away.
+      SplashScreen.hideAsync().catch(() => {});
+    });
   }, []);
 
   return showing ? <IntroAnimation ready={ready} onDone={done} /> : null;

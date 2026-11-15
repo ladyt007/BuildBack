@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { STATUS_LABEL } from '@/components/cards';
+import { SettingsCard } from '@/components/settings-card';
 import { Body, Button, Card, Pill, Row, Screen, Title, type IconName } from '@/components/ui';
 import { backend } from '@/data';
 import { useColors } from '@/hooks/use-colors';
@@ -42,6 +43,7 @@ export default function ProfileScreen() {
         <Link href="/auth?mode=signin" asChild>
           <Button label="I already have an account" variant="secondary" />
         </Link>
+        <SettingsCard />
       </Screen>
     );
   }
@@ -112,6 +114,8 @@ export default function ProfileScreen() {
         <MenuItem icon="rocket-outline" label="Grow your business with BuildBack" href="/promote" />
         {profile.isAdmin ? <MenuItem icon="shield-checkmark-outline" label="Review help requests" href="/admin" /> : null}
       </Card>
+
+      <SettingsCard />
 
       {isDemoMode ? (
         <Body muted>
