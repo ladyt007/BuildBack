@@ -44,7 +44,7 @@ src/lib/          Theme, categories, points and badges, location helpers
 src/state/        App-wide state: account, location, follows, gifts
 supabase/         Database schema
 legacy/           The original 2020 Swift/iOS app, kept for reference
-scripts/          generate-logo.py redraws the logo and app icons in assets/images
+scripts/          generate-logo.py redraws the logo, app icons and opening-animation layers
 ```
 
 ## Connect the real database (Supabase)

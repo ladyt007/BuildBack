@@ -1,11 +1,12 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { CelebrationProvider } from '@/components/celebration';
+import { IntroAnimation } from '@/components/intro-animation';
 import { Colors } from '@/lib/theme';
 import { loadJSON, WELCOMED_KEY } from '@/lib/storage';
 import { AppProvider, useApp } from '@/state/app-state';
@@ -18,7 +19,6 @@ function Gate() {
 
   useEffect(() => {
     if (!ready) return;
-    SplashScreen.hideAsync().catch(() => {});
     // First time on the home screen without an account: show the welcome screen once.
     if (!profile && pathname === '/') {
       loadJSON<boolean>(WELCOMED_KEY, false).then((seen) => {
@@ -30,6 +30,20 @@ function Gate() {
   }, [ready]);
 
   return null;
+}
+
+/** Plays the brick-building intro over the app while it loads. */
+function Intro() {
+  const { ready } = useApp();
+  const [showing, setShowing] = useState(true);
+  const done = useCallback(() => setShowing(false), []);
+
+  useEffect(() => {
+    // The native splash is a plain blue screen; swap to the animation right away.
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
+  return showing ? <IntroAnimation ready={ready} onDone={done} /> : null;
 }
 
 export default function RootLayout() {
@@ -67,6 +81,7 @@ export default function RootLayout() {
               <Stack.Screen name="promote" options={{ title: 'Grow with BuildBack' }} />
               <Stack.Screen name="admin" options={{ title: 'Review requests' }} />
             </Stack>
+            <Intro />
           </AppProvider>
         </CelebrationProvider>
       </ThemeProvider>
