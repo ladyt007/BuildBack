@@ -7,7 +7,7 @@ export const Config = {
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
 
   /** Public website, used for share links. */
-  siteUrl: process.env.EXPO_PUBLIC_SITE_URL ?? 'https://buildback.app',
+  siteUrl: process.env.EXPO_PUBLIC_SITE_URL ?? 'https://buildback-community.netlify.app',
 
   /** Payment links (e.g. Stripe Payment Links) for BuildBack's own paid plans. */
   links: {
