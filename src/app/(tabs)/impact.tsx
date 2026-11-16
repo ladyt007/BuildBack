@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { BadgeCollection } from '@/components/badges';
 import { CommunityBanner } from '@/components/cards';
 import { GivingMeter, LivesWall } from '@/components/impact-meters';
 import { Body, Button, Card, ProgressBar, Row, Screen, Title } from '@/components/ui';
@@ -72,21 +73,7 @@ export default function ImpactScreen() {
             <Stat n={impact.businessesListed} label="Businesses listed" />
           </Row>
 
-          <Text style={[styles.section, { color: colors.text }]}>Badges</Text>
-          <View style={styles.badges}>
-            {impact.badges.map((b) => (
-              <View
-                key={b.id}
-                style={[
-                  styles.badge,
-                  { backgroundColor: colors.card, borderColor: b.earned ? colors.accent : colors.border, opacity: b.earned ? 1 : 0.55 },
-                ]}>
-                <Text style={{ fontSize: 30 }}>{b.earned ? b.emoji : '🔒'}</Text>
-                <Text style={[styles.badgeName, { color: colors.text }]}>{b.name}</Text>
-                <Text style={[styles.badgeDesc, { color: colors.textSecondary }]}>{b.description}</Text>
-              </View>
-            ))}
-          </View>
+          <BadgeCollection badges={impact.badges} />
 
           <Card>
             <Text style={[styles.section, { color: colors.text }]}>How to earn points</Text>
@@ -141,16 +128,4 @@ const styles = StyleSheet.create({
   section: { fontSize: 19, fontWeight: '800' },
   tallyHead: { flexDirection: 'row', alignItems: 'center', gap: Space.md },
   tallyNumber: { fontSize: 48, fontWeight: '900', minWidth: 56, textAlign: 'center' },
-  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: Space.md },
-  badge: {
-    width: '47%',
-    flexGrow: 1,
-    borderRadius: Radius.md,
-    borderWidth: 1.5,
-    padding: Space.md,
-    alignItems: 'center',
-    gap: 4,
-  },
-  badgeName: { fontWeight: '800', fontSize: 14, textAlign: 'center' },
-  badgeDesc: { fontSize: 12, textAlign: 'center' },
 });

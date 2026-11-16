@@ -59,7 +59,9 @@ function progressExtras(before: ImpactSummary, after: ImpactSummary): string[] {
   const lines: string[] = [];
   if (after.level.name !== before.level.name) lines.push(`${after.level.emoji} Level up: ${after.level.name}!`);
   const badgeLines = newlyEarnedBadges(before, after).map((b) => `${b.emoji} Badge earned: ${b.name}`);
-  return [...lines, ...badgeLines];
+  const all = [...lines, ...badgeLines];
+  // Keep the celebration card a sensible size.
+  return all.length > 4 ? [...all.slice(0, 3), `🏅 …and ${all.length - 3} more on your Impact tab`] : all;
 }
 
 /** "an Irish pub", "a barber shop" */

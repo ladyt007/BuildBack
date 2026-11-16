@@ -57,6 +57,8 @@ scripts/          generate-logo.py redraws the logo, app icons and opening-anima
 
 ## Connect the real database (Supabase)
 
+Step-by-step guide: **[docs/supabase-setup.md](docs/supabase-setup.md)**. Short version:
+
 1. Create a free project at [supabase.com](https://supabase.com).
 2. In the dashboard, open **SQL Editor → New query**, paste the contents of
    `supabase/migrations/0001_initial_schema.sql`, and click **Run**. Do the same with

@@ -20,14 +20,29 @@ export const POINTS = {
   listBusiness: 25,
 };
 
-/** Giving milestones, by total reported dollars given. */
+/** Giving levels, by total reported dollars given. Each level after the first is also a badge. */
 export const GIVING_TIERS = [
-  { name: 'Getting started', min: 0, emoji: '🌱' },
-  { name: 'Generous Heart', min: 50, emoji: '💛' },
-  { name: 'Big Heart', min: 250, emoji: '💖' },
-  { name: 'Community Pillar', min: 1000, emoji: '🏛️' },
+  { id: 'give-0', name: 'Getting started', min: 0, emoji: '🌱' },
+  { id: 'give-25', name: 'Seed Planter', min: 25, emoji: '🌻' },
+  { id: 'generous-heart', name: 'Generous Heart', min: 50, emoji: '💛' },
+  { id: 'give-100', name: 'Open Hand', min: 100, emoji: '🤲' },
+  { id: 'big-heart', name: 'Big Heart', min: 250, emoji: '💖' },
+  { id: 'give-500', name: 'Golden Heart', min: 500, emoji: '🌟' },
+  { id: 'pillar', name: 'Community Pillar', min: 1000, emoji: '🏛️' },
+  { id: 'give-5000', name: 'Legacy Builder', min: 5000, emoji: '👑' },
 ];
 export type GivingTier = (typeof GIVING_TIERS)[number];
+
+export type BadgeCategory = 'giving' | 'gifts' | 'lives' | 'businesses' | 'neighbors' | 'community';
+
+export const BADGE_CATEGORIES: { id: BadgeCategory; title: string; blurb: string }[] = [
+  { id: 'giving', title: 'Giving levels', blurb: 'Total you’ve given through BuildBack' },
+  { id: 'lives', title: 'Lives built up', blurb: 'Businesses and neighbors you’ve helped, plus nominations' },
+  { id: 'gifts', title: 'Times you’ve given', blurb: 'Every gift counts, big or small' },
+  { id: 'businesses', title: 'Businesses impacted', blurb: 'Different businesses you’ve supported' },
+  { id: 'neighbors', title: 'Neighbors impacted', blurb: 'Different neighbors you’ve helped' },
+  { id: 'community', title: 'Community', blurb: 'Joining in and spreading the word' },
+];
 
 export type Badge = {
   id: string;
@@ -35,7 +50,35 @@ export type Badge = {
   description: string;
   emoji: string;
   earned: boolean;
+  category: BadgeCategory;
+  /** Step in its ladder (0 = first). Sets the bronze / silver / gold / diamond ring. */
+  rank: number;
+  /** Progress toward earning it, e.g. 7 of 10. */
+  current: number;
+  target: number;
+  /** Shown as dollars ("$35 of $50") instead of a count. */
+  money?: boolean;
 };
+
+type LadderStep = { id: string; name: string; emoji: string; target: number };
+
+function ladder(
+  category: BadgeCategory,
+  current: number,
+  steps: LadderStep[],
+  describe: (target: number) => string,
+  money = false
+): Badge[] {
+  return steps.map((step, rank) => ({
+    ...step,
+    category,
+    rank,
+    current,
+    money,
+    description: describe(step.target),
+    earned: current >= step.target,
+  }));
+}
 
 export type ImpactSummary = {
   points: number;
@@ -102,20 +145,76 @@ export function summarizeImpact(activity: MyActivity, profile: Profile | null): 
 
   const joinedYear = profile ? new Date(profile.joinedAt).getFullYear() : null;
 
+  const gifts = activity.supports.length;
+  const plural = (n: number, one: string, many: string) => `${n.toLocaleString()} ${n === 1 ? one : many}`;
+
   const badges: Badge[] = [
-    { id: 'founding', name: 'Founding Builder', emoji: '🌱', description: 'Joined during BuildBack’s first year', earned: joinedYear !== null && joinedYear <= 2027 },
-    { id: 'first-support', name: 'First Brick', emoji: '🧱', description: 'Supported your first business or neighbor', earned: activity.supports.length >= 1 },
-    { id: 'shop-local', name: 'Shop Local', emoji: '🛍️', description: 'Supported 3 different businesses', earned: businessesHelped >= 3 },
-    { id: 'neighbors-keeper', name: 'Neighbor’s Keeper', emoji: '💛', description: 'Helped a neighbor in need', earned: neighborsHelped >= 1 },
-    { id: 'wish-maker', name: 'Wish Maker', emoji: '✨', description: 'Told us what your community is missing', earned: wishes >= 1 },
-    { id: 'scout', name: 'Talent Scout', emoji: '🔭', description: 'Nominated a business you love', earned: nominations >= 1 },
-    { id: 'open-for-business', name: 'Open for Business', emoji: '🏪', description: 'Listed your business on BuildBack', earned: businessesListed >= 1 },
-    { id: 'life-builder', name: 'Life Builder', emoji: '🧱', description: 'Built up 10 lives', earned: livesBuiltUp >= 10 },
-    { id: 'generous-heart', name: 'Generous Heart', emoji: '💛', description: 'Gave $50 through BuildBack', earned: totalGiven >= 50 },
-    { id: 'big-heart', name: 'Big Heart', emoji: '💖', description: 'Gave $250 through BuildBack', earned: totalGiven >= 250 },
-    { id: 'pillar', name: 'Community Pillar', emoji: '🏛️', description: 'Gave $1,000 through BuildBack', earned: totalGiven >= 1000 },
-    { id: 'fan', name: 'Biggest Fan', emoji: '📣', description: 'Followed 5 businesses', earned: following >= 5 },
-    { id: 'champion', name: 'Community Champion', emoji: '🏆', description: 'Gave 10 times', earned: activity.supports.length >= 10 },
+    ...ladder(
+      'giving',
+      totalGiven,
+      GIVING_TIERS.slice(1).map((t) => ({ id: t.id, name: t.name, emoji: t.emoji, target: t.min })),
+      (t) => `Give ${formatMoney(t)} through BuildBack`,
+      true
+    ),
+    ...ladder(
+      'lives',
+      livesBuiltUp,
+      [
+        { id: 'lives-5', name: 'Foundation Layer', emoji: '🪨', target: 5 },
+        { id: 'life-builder', name: 'Life Builder', emoji: '🧱', target: 10 },
+        { id: 'lives-25', name: 'Wall Raiser', emoji: '🏗️', target: 25 },
+        { id: 'lives-50', name: 'Neighborhood Builder', emoji: '🏘️', target: 50 },
+        { id: 'lives-100', name: 'City Builder', emoji: '🏙️', target: 100 },
+      ],
+      (t) => `Build up ${plural(t, 'life', 'lives')}`
+    ),
+    ...ladder(
+      'gifts',
+      gifts,
+      [
+        { id: 'first-support', name: 'First Brick', emoji: '🧱', target: 1 },
+        { id: 'gifts-5', name: 'Steady Hand', emoji: '🤝', target: 5 },
+        { id: 'champion', name: 'Community Champion', emoji: '🏆', target: 10 },
+        { id: 'gifts-25', name: 'Cornerstone Giver', emoji: '💎', target: 25 },
+        { id: 'gifts-50', name: 'Unbreakable', emoji: '🔥', target: 50 },
+      ],
+      (t) => (t === 1 ? 'Give for the first time' : `Give ${t} times`)
+    ),
+    ...ladder(
+      'businesses',
+      businessesHelped,
+      [
+        { id: 'biz-1', name: 'Main Street Friend', emoji: '🛒', target: 1 },
+        { id: 'shop-local', name: 'Shop Local', emoji: '🛍️', target: 3 },
+        { id: 'biz-10', name: 'Main Street Hero', emoji: '🦸', target: 10 },
+        { id: 'biz-25', name: 'Business District Builder', emoji: '🏬', target: 25 },
+      ],
+      (t) => `Support ${plural(t, 'business', 'businesses')}`
+    ),
+    ...ladder(
+      'neighbors',
+      neighborsHelped,
+      [
+        { id: 'neighbors-keeper', name: 'Neighbor’s Keeper', emoji: '🫶', target: 1 },
+        { id: 'neighbors-5', name: 'Good Neighbor', emoji: '🏡', target: 5 },
+        { id: 'neighbors-15', name: 'Village Builder', emoji: '🌳', target: 15 },
+        { id: 'neighbors-30', name: 'Heart of the Block', emoji: '❤️‍🔥', target: 30 },
+      ],
+      (t) => `Help ${plural(t, 'neighbor', 'neighbors')}`
+    ),
+    { id: 'founding', name: 'Founding Builder', emoji: '🌱', description: 'Join during BuildBack’s first year', category: 'community', rank: 0, current: joinedYear !== null && joinedYear <= 2027 ? 1 : 0, target: 1, earned: joinedYear !== null && joinedYear <= 2027 },
+    ...ladder('community', wishes, [{ id: 'wish-maker', name: 'Wish Maker', emoji: '✨', target: 1 }], () => 'Tell us what your community is missing'),
+    ...ladder(
+      'community',
+      nominations,
+      [
+        { id: 'scout', name: 'Talent Scout', emoji: '🔭', target: 1 },
+        { id: 'scout-5', name: 'Head Scout', emoji: '🧭', target: 5 },
+      ],
+      (t) => (t === 1 ? 'Nominate a business you love' : `Nominate ${t} businesses`)
+    ),
+    ...ladder('community', businessesListed, [{ id: 'open-for-business', name: 'Open for Business', emoji: '🏪', target: 1 }], () => 'List your business on BuildBack'),
+    ...ladder('community', following, [{ id: 'fan', name: 'Biggest Fan', emoji: '📣', target: 5 }], () => 'Follow 5 businesses'),
   ];
 
   return {
