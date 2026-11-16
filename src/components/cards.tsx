@@ -4,6 +4,7 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { isFeatured } from '@/data/shared';
+import { formatMoney } from '@/lib/gamification';
 import { useColors } from '@/hooks/use-colors';
 import { businessCategory, neighborNeed } from '@/lib/categories';
 import { distanceMiles, formatDistance } from '@/lib/geo';
@@ -125,9 +126,11 @@ export function NeighborCard({ neighbor, center }: { neighbor: NeighborRequest; 
         <Text style={[styles.desc, { color: colors.text }]} numberOfLines={2}>
           {neighbor.story}
         </Text>
+        {neighbor.goalAmount ? <ProgressBar value={neighbor.reportedTotal / neighbor.goalAmount} color={colors.success} height={8} /> : null}
         <Text style={[styles.meta, { color: colors.textSecondary }]}>
           💛 {neighbor.supporterCount} {neighbor.supporterCount === 1 ? 'neighbor has' : 'neighbors have'} helped
-          {neighbor.goalAmount ? ` · Goal $${neighbor.goalAmount.toLocaleString()}` : ''}
+          {neighbor.reportedTotal > 0 ? ` · ${formatMoney(neighbor.reportedTotal)} given` : ''}
+          {neighbor.goalAmount ? ` of ${formatMoney(neighbor.goalAmount)}` : ''}
         </Text>
       </Pressable>
     </Link>
@@ -190,8 +193,8 @@ export function MyProgressStrip() {
             </Text>
             <ProgressBar value={impact.progress} />
             <Text style={[styles.meta, { color: colors.textSecondary }]}>
-              You’ve helped {impact.businessesHelped} {impact.businessesHelped === 1 ? 'business' : 'businesses'} and{' '}
-              {impact.neighborsHelped} {impact.neighborsHelped === 1 ? 'neighbor' : 'neighbors'}
+              🧱 {impact.livesBuiltUp} {impact.livesBuiltUp === 1 ? 'life' : 'lives'} built up · 💵{' '}
+              {formatMoney(impact.totalGiven)} given
               {impact.nextLevel ? ` · ${impact.nextLevel.min - impact.points} pts to ${impact.nextLevel.name}` : ''}
             </Text>
           </View>

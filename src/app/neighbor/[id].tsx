@@ -3,7 +3,8 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, StyleSheet, Text, View } from 'react-native';
 
-import { Body, Button, Card, EmptyState, Row, Screen, Title } from '@/components/ui';
+import { CommunityGiving } from '@/components/impact-meters';
+import { Body, Button, Card, EmptyState, Screen, Title } from '@/components/ui';
 import { backend } from '@/data';
 import { useColors } from '@/hooks/use-colors';
 import { neighborNeed } from '@/lib/categories';
@@ -78,14 +79,14 @@ export default function NeighborScreen() {
       <Body>{n.story}</Body>
 
       <Card>
-        <Row style={{ justifyContent: 'space-between' }}>
+        {n.supporterCount > 0 || n.reportedTotal > 0 ? (
+          <CommunityGiving total={n.reportedTotal ?? 0} supporters={n.supporterCount} goal={n.goalAmount} />
+        ) : (
           <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16 }}>
-            💛 {n.supporterCount} {n.supporterCount === 1 ? 'neighbor has' : 'neighbors have'} helped
+            Be the first to help {n.firstName}
+            {n.goalAmount ? ` · goal $${n.goalAmount.toLocaleString()}` : ''}
           </Text>
-          {n.goalAmount ? (
-            <Text style={{ color: colors.textSecondary }}>Goal ${n.goalAmount.toLocaleString()}</Text>
-          ) : null}
-        </Row>
+        )}
         <Body muted style={{ fontSize: 13 }}>
           Reviewed by the BuildBack team. Your gift goes directly to {n.firstName}’s fundraiser.
         </Body>

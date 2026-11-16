@@ -2,7 +2,6 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { useCelebrate } from '@/components/celebration';
 import { CoverPhotoField, GalleryField } from '@/components/photos';
 import { PlaceField, splitPlaceLabel } from '@/components/place-field';
 import { Body, Button, Chip, Field, Screen } from '@/components/ui';
@@ -25,8 +24,7 @@ export default function BusinessFormScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const editing = !!id;
   const colors = useColors();
-  const celebrate = useCelebrate();
-  const { ready, profile, requireAccount, touch } = useApp();
+  const { ready, profile, requireAccount, touch, listBusiness } = useApp();
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState('beauty');
@@ -99,16 +97,8 @@ export default function BusinessFormScreen() {
         touch();
         router.back();
       } else {
-        const b = await backend.createBusiness(input);
-        touch();
+        const b = await listBusiness(input);
         router.replace(`/business/${b.id}`);
-        celebrate({
-          style: 'confetti',
-          emoji: '🏪',
-          title: `${b.name} is on BuildBack!`,
-          message: 'Neighbors near you can now find, follow and support you. Post an update to say hello.',
-          cta: 'See my listing',
-        });
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');

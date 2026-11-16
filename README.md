@@ -14,8 +14,13 @@ tell the world what their community is missing.
 - 🔭 **Nominations** — anyone can add a business they love, even if it isn't theirs. The team reviews it, sends
   the owner a claim link with a one-time code, and the owner takes over the listing in a minute. Owners without a
   code can submit a claim that the team verifies by hand.
-- 🏆 **Impact** — points, levels, badges and celebrations (confetti and money rain) every time you give, plus
-  community-wide totals.
+- 🏆 **Impact** — a brick wall that grows with every life you build up, a giving meter with tiers
+  (Generous Heart $50, Big Heart $250, Community Pillar $1,000), points, levels, badges, and celebrations
+  (confetti and money rain) when you give, list a business or nominate one.
+
+After giving, people tap how much they gave ($5–$100 or their own amount). It's optional and self-reported:
+their exact gifts are private, and each business or neighbor page shows the anonymous total ("$1,020 given by
+24 neighbors through BuildBack") with a bar toward a neighbor's goal.
 
 BuildBack never handles donations. Gifts go straight to each business's or person's own payment or fundraiser link.
 
@@ -55,8 +60,9 @@ scripts/          generate-logo.py redraws the logo, app icons and opening-anima
 1. Create a free project at [supabase.com](https://supabase.com).
 2. In the dashboard, open **SQL Editor → New query**, paste the contents of
    `supabase/migrations/0001_initial_schema.sql`, and click **Run**. Do the same with
-   `0002_photos.sql` (profile and business photos) and `0003_nominations_and_claims.sql`
-   (community nominations and claiming listings), in that order.
+   `0002_photos.sql` (profile and business photos), `0003_nominations_and_claims.sql`
+   (community nominations and claiming listings) and `0004_reported_totals.sql` (giving totals), in that
+   order.
 3. Copy `.env.example` to `.env`, then fill in `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` from
    **Project Settings → API**.
 4. Restart `npm run web`. The preview banner disappears once you're connected.
@@ -115,6 +121,8 @@ business in Supabase. Automating this with a Stripe webhook is on the roadmap.
 ## Roadmap
 
 - [ ] Photos on help requests
+- [ ] Verified giving totals: let businesses connect their own Stripe account (Stripe Connect) so gifts are
+      recorded automatically and exactly, instead of self-reported
 - [ ] Stripe webhook to switch on Featured/Pro automatically after payment
 - [ ] Pro "demand insights" dashboard for business owners
 - [ ] Notify people who wished for something when a matching business opens nearby

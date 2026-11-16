@@ -2,6 +2,7 @@ import { Link } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { CommunityBanner } from '@/components/cards';
+import { GivingMeter, LivesWall } from '@/components/impact-meters';
 import { Body, Button, Card, ProgressBar, Row, Screen, Title } from '@/components/ui';
 import { useColors } from '@/hooks/use-colors';
 import { Config } from '@/lib/config';
@@ -43,19 +44,33 @@ export default function ImpactScreen() {
             </View>
           </View>
 
-          <Row style={{ gap: Space.md }}>
-            <Stat n={impact.businessesHelped} label="Businesses helped" />
-            <Stat n={impact.neighborsHelped} label="Neighbors helped" />
-          </Row>
+          <Card style={{ gap: Space.md }}>
+            <View style={styles.tallyHead}>
+              <Text style={[styles.tallyNumber, { color: colors.primary }]}>{impact.livesBuiltUp}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.section, { color: colors.text }]}>
+                  {impact.livesBuiltUp === 1 ? 'life' : 'lives'} built up
+                </Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                  {impact.businessesHelped} {impact.businessesHelped === 1 ? 'business' : 'businesses'} ·{' '}
+                  {impact.neighborsHelped} {impact.neighborsHelped === 1 ? 'neighbor' : 'neighbors'} ·{' '}
+                  {impact.nominations} {impact.nominations === 1 ? 'nomination' : 'nominations'}
+                </Text>
+              </View>
+            </View>
+            <LivesWall count={impact.livesBuiltUp} />
+          </Card>
+
+          <Card style={{ gap: Space.sm }}>
+            <Text style={[styles.section, { color: colors.text }]}>💵 You’ve given</Text>
+            <GivingMeter impact={impact} />
+          </Card>
+
           <Row style={{ gap: Space.md }}>
             <Stat n={impact.wishes} label="Wishes made" />
             <Stat n={impact.following} label="Following" />
+            <Stat n={impact.businessesListed} label="Businesses listed" />
           </Row>
-          {impact.totalGiven > 0 ? (
-            <Body muted style={{ textAlign: 'center' }}>
-              You’ve given about ${impact.totalGiven.toLocaleString()} directly to your community. Only you can see this.
-            </Body>
-          ) : null}
 
           <Text style={[styles.section, { color: colors.text }]}>Badges</Text>
           <View style={styles.badges}>
@@ -78,6 +93,7 @@ export default function ImpactScreen() {
             <Body>🏪 Support a business: +{POINTS.supportBusiness}</Body>
             <Body>💛 Help a neighbor: +{POINTS.supportNeighbor}</Body>
             <Body>✨ Make a wish: +{POINTS.wish}</Body>
+            <Body>🏪 List your business: +{POINTS.listBusiness}</Body>
             <Body>🔭 Nominate a business: +{POINTS.nominate}</Body>
             <Body>❤️ Follow a business: +{POINTS.follow}</Body>
             <Body muted>Levels: {LEVELS.map((l) => `${l.emoji} ${l.name}`).join(' → ')}</Body>
@@ -123,6 +139,8 @@ const styles = StyleSheet.create({
   stat: { flex: 1, borderRadius: Radius.md, borderWidth: StyleSheet.hairlineWidth, padding: Space.lg, gap: 2 },
   statN: { fontSize: 30, fontWeight: '900' },
   section: { fontSize: 19, fontWeight: '800' },
+  tallyHead: { flexDirection: 'row', alignItems: 'center', gap: Space.md },
+  tallyNumber: { fontSize: 48, fontWeight: '900', minWidth: 56, textAlign: 'center' },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: Space.md },
   badge: {
     width: '47%',

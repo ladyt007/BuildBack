@@ -3,13 +3,19 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { useCelebrate } from '@/components/celebration';
-import { Button, Field } from '@/components/ui';
-import { backend, type NewNomination, type NewWish } from '@/data';
+import { Button, Chip, Field } from '@/components/ui';
+import { backend, type NewBusiness, type NewNomination, type NewWish } from '@/data';
 import { groupWishes } from '@/data/shared';
 import { useColors } from '@/hooks/use-colors';
 import { Config } from '@/lib/config';
 import { openExternal } from '@/lib/links';
-import { newlyEarnedBadges, summarizeImpact, type ImpactSummary } from '@/lib/gamification';
+import {
+  formatMoney,
+  newlyEarnedBadges,
+  POINTS,
+  summarizeImpact,
+  type ImpactSummary,
+} from '@/lib/gamification';
 import { loadJSON, saveJSON } from '@/lib/storage';
 import { Radius, Space } from '@/lib/theme';
 import type { Business, CommunityStats, MyActivity, Place, Profile, SupportTarget } from '@/lib/types';
@@ -40,6 +46,7 @@ type AppState = {
    */
   requireAccount: (reason?: string, options?: { leaveIfDismissed?: boolean }) => boolean;
   nominate: (input: NewNomination) => Promise<Business>;
+  listBusiness: (input: NewBusiness) => Promise<Business>;
   toggleFollow: (businessId: string) => Promise<void>;
   give: (target: GiveTarget) => Promise<void>;
   addWish: (wish: NewWish) => Promise<void>;
@@ -47,12 +54,20 @@ type AppState = {
   touch: () => void;
 };
 
+/** Level-ups, new giving tiers and badges earned between two snapshots, for celebrations. */
+function progressExtras(before: ImpactSummary, after: ImpactSummary): string[] {
+  const lines: string[] = [];
+  if (after.level.name !== before.level.name) lines.push(`${after.level.emoji} Level up: ${after.level.name}!`);
+  const badgeLines = newlyEarnedBadges(before, after).map((b) => `${b.emoji} Badge earned: ${b.name}`);
+  return [...lines, ...badgeLines];
+}
+
 /** "an Irish pub", "a barber shop" */
 function withArticle(kind: string): string {
   return /^[aeiou]/i.test(kind) ? `an ${kind}` : `a ${kind}`;
 }
 
-const emptyActivity: MyActivity = { supports: [], wishes: [], followingIds: [], nominationIds: [] };
+const emptyActivity: MyActivity = { supports: [], wishes: [], followingIds: [], nominationIds: [], ownedBusinessIds: [] };
 const AREA_KEY = 'buildback.area.v1';
 
 const AppContext = createContext<AppState | null>(null);
@@ -185,6 +200,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [profile]
   );
 
+  const listBusiness = useCallback(
+    async (input: NewBusiness) => {
+      const before = impact;
+      const business = await backend.createBusiness(input);
+      const a = await backend.myActivity();
+      setActivity(a);
+      setStats(await backend.communityStats());
+      touch();
+      celebrate({
+        style: 'confetti',
+        emoji: '🏪',
+        title: `${business.name} is on BuildBack!`,
+        message: `Neighbors near you can now find, follow and support you. You earned ${POINTS.listBusiness} builder points. Post an update to say hello.`,
+        extras: progressExtras(before, summarizeImpact(a, profile)),
+        cta: 'See my listing',
+      });
+      return business;
+    },
+    [celebrate, impact, profile, touch]
+  );
+
   const nominate = useCallback(
     async (input: NewNomination) => {
       const before = impact;
@@ -192,14 +228,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const a = await backend.myActivity();
       setActivity(a);
       touch();
-      const earned = newlyEarnedBadges(before, summarizeImpact(a, profile));
       celebrate({
         style: 'confetti',
         emoji: '🔭',
         title: `Thanks for nominating ${business.name}!`,
         message:
           'Our team will review it and reach out to the owner so they can claim their free listing. You earned 10 builder points.',
-        extras: earned.map((b) => `${b.emoji} Badge earned: ${b.name}`),
+        extras: progressExtras(before, summarizeImpact(a, profile)),
       });
       return business;
     },
@@ -242,21 +277,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setStats(await backend.communityStats());
       touch();
       const after = summarizeImpact(a, profile);
-      const earned = newlyEarnedBadges(before, after);
-      const helped =
-        target.type === 'business'
-          ? `You've helped ${after.businessesHelped} ${after.businessesHelped === 1 ? 'business' : 'businesses'}`
-          : `You've helped ${after.neighborsHelped} ${after.neighborsHelped === 1 ? 'neighbor' : 'neighbors'}`;
-      const leveledUp = after.level.name !== before.level.name;
       celebrate({
         style: 'money',
         emoji: target.type === 'business' ? '🏪' : '💛',
-        title: `You just built up ${target.name}!`,
-        message: `${helped} so far. ${after.points} builder points and counting.`,
-        extras: [
-          ...(leveledUp ? [`${after.level.emoji} Level up: ${after.level.name}!`] : []),
-          ...earned.map((b) => `${b.emoji} Badge earned: ${b.name}`),
-        ],
+        title: amount ? `You gave ${formatMoney(amount)} to ${target.name}!` : `You just built up ${target.name}!`,
+        message: [
+          `That's ${after.livesBuiltUp} ${after.livesBuiltUp === 1 ? 'life' : 'lives'} you've built up`,
+          after.totalGiven > 0 ? ` and ${formatMoney(after.totalGiven)} given` : '',
+          `. ${after.points} builder points and counting.`,
+        ].join(''),
+        extras: progressExtras(before, after),
       });
     },
     [celebrate, impact, pendingGift, profile, touch]
@@ -311,6 +341,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRadiusMiles,
     requireAccount,
     nominate,
+    listBusiness,
     toggleFollow,
     give,
     addWish,
@@ -374,7 +405,9 @@ function GiftPrompt({
 }) {
   const colors = useColors();
   const [amount, setAmount] = useState('');
-  const parsed = parseFloat(amount.replace(/[^0-9.]/g, ''));
+  const [quick, setQuick] = useState<number | null>(null);
+  const typed = parseFloat(amount.replace(/[^0-9.]/g, ''));
+  const chosen = quick ?? (Number.isFinite(typed) && typed > 0 ? Math.min(typed, 10000) : null);
 
   return (
     <Modal visible={!!target} transparent animationType="slide" onRequestClose={onDismiss}>
@@ -382,20 +415,38 @@ function GiftPrompt({
         <View style={[styles.sheet, { backgroundColor: colors.card }]}>
           <Text style={[styles.sheetTitle, { color: colors.text }]}>Did you give to {target?.name}?</Text>
           <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 21 }}>
-            Your gift went straight to them — BuildBack never touches the money. Let us know so we can count it toward
-            your impact.
+            Your gift went straight to them — BuildBack never touches the money. Tell us how much so we can add it to
+            your tally and celebrate it.
           </Text>
+          <Text style={{ color: colors.text, fontWeight: '700' }}>How much did you give? (optional)</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Space.sm }}>
+            {QUICK_AMOUNTS.map((n) => (
+              <Chip
+                key={n}
+                label={`$${n}`}
+                selected={quick === n}
+                onPress={() => {
+                  setQuick(quick === n ? null : n);
+                  setAmount('');
+                }}
+              />
+            ))}
+          </View>
           <Field
-            label="How much? (optional, only you see this)"
-            placeholder="$25"
+            label="Or enter an amount"
+            placeholder="$35"
             keyboardType="decimal-pad"
             value={amount}
-            onChangeText={setAmount}
+            onChangeText={(t) => {
+              setAmount(t);
+              setQuick(null);
+            }}
+            hint="Only you see your exact gifts. We add them to an anonymous total on their page."
           />
           <Button
-            label="Yes, I gave! 🎉"
+            label={chosen ? `Yes, I gave ${formatMoney(chosen)}! 🎉` : 'Yes, I gave! 🎉'}
             variant="gold"
-            onPress={() => onAnswer(Number.isFinite(parsed) && parsed > 0 ? parsed : null)}
+            onPress={() => onAnswer(chosen)}
           />
           <Button label="Not yet" variant="ghost" onPress={onDismiss} />
         </View>
@@ -403,6 +454,8 @@ function GiftPrompt({
     </Modal>
   );
 }
+
+const QUICK_AMOUNTS = [5, 10, 25, 50, 100];
 
 const styles = StyleSheet.create({
   sheetWrap: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },

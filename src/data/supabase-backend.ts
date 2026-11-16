@@ -71,6 +71,7 @@ const toBusiness = (r: Row): Business => ({
   createdAt: r.created_at,
   followerCount: r.follower_count,
   supporterCount: r.supporter_count,
+  reportedTotal: Number(r.reported_total ?? 0),
 });
 
 const fromBusiness = (b: Partial<NewBusiness>): Row => {
@@ -141,6 +142,7 @@ const toNeighbor = (r: Row): NeighborRequest => ({
   status: r.status,
   createdAt: r.created_at,
   supporterCount: r.supporter_count,
+  reportedTotal: Number(r.reported_total ?? 0),
 });
 
 const fromNeighbor = (n: NewNeighborRequest): Row => ({
@@ -473,12 +475,13 @@ export const supabaseBackend: Backend = {
   async myActivity() {
     const { data } = await supabase.auth.getSession();
     const id = data.session?.user.id;
-    if (!id) return { supports: [], wishes: [], followingIds: [], nominationIds: [] };
-    const [supports, wishes, follows, nominated] = await Promise.all([
+    if (!id) return { supports: [], wishes: [], followingIds: [], nominationIds: [], ownedBusinessIds: [] };
+    const [supports, wishes, follows, nominated, owned] = await Promise.all([
       supabase.from('supports').select('*').eq('user_id', id),
       supabase.from('wishes').select('*').eq('user_id', id),
       supabase.from('follows').select('business_id').eq('user_id', id),
       supabase.from('businesses').select('id').eq('nominated_by', id),
+      supabase.from('businesses').select('id').eq('owner_id', id),
     ]);
     return {
       supports: (check(supports) ?? []).map(
@@ -494,6 +497,7 @@ export const supabaseBackend: Backend = {
       wishes: (check(wishes) ?? []).map(toWish),
       followingIds: (check(follows) ?? []).map((r: Row) => r.business_id),
       nominationIds: (check(nominated) ?? []).map((r: Row) => r.id),
+      ownedBusinessIds: (check(owned) ?? []).map((r: Row) => r.id),
     };
   },
 

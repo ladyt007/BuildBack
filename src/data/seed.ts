@@ -7,7 +7,7 @@ import type { Business, NeighborRequest, Nomination, Sponsor, StatusUpdate, Wish
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 const daysFromNow = (n: number) => new Date(Date.now() + n * 86400000).toISOString();
 
-type SeedBiz = Omit<Business, 'id' | 'ownerId' | 'createdAt' | 'isPro' | 'featuredUntil' | 'imageUrl' | 'photos' | 'website' | 'phone' | 'claimStatus' | 'reviewStatus' | 'nominatedBy'> &
+type SeedBiz = Omit<Business, 'id' | 'ownerId' | 'createdAt' | 'isPro' | 'featuredUntil' | 'imageUrl' | 'photos' | 'website' | 'phone' | 'claimStatus' | 'reviewStatus' | 'nominatedBy' | 'reportedTotal'> &
   Partial<Pick<Business, 'isPro' | 'featuredUntil' | 'website' | 'phone'>>;
 
 const biz: SeedBiz[] = [
@@ -47,6 +47,8 @@ export const seedBusinesses: Business[] = biz.map((b, i) => ({
   createdAt: daysAgo(120 - i * 4),
   imageUrl: null,
   photos: [],
+  // Sample totals: roughly what supporters might report giving.
+  reportedTotal: b.supporterCount * 35,
   website: b.website ?? null,
   phone: b.phone ?? null,
   isPro: b.isPro ?? false,
@@ -81,6 +83,7 @@ seedBusinesses.push({
   createdAt: daysAgo(0),
   followerCount: 0,
   supporterCount: 0,
+  reportedTotal: 0,
 });
 
 export const seedNominations: Nomination[] = [
@@ -138,7 +141,7 @@ export const seedStatusUpdates: StatusUpdate[] = [
   { id: 'u7', businessId: 'b17', body: 'Rent went up 40%. We’re fighting to stay. Come have a pint with us.', createdAt: daysAgo(6) },
 ];
 
-export const seedNeighbors: NeighborRequest[] = [
+const neighborSeeds: Omit<NeighborRequest, 'reportedTotal'>[] = [
   { id: 'n1', ownerId: 'seed', firstName: 'Denise', title: 'Help Denise keep her home after surgery', story: 'I’m a school bus driver in Macon. After back surgery I’ve been out of work for two months and fell behind on rent. I go back to work in January and just need to bridge the gap.', need: 'rent', goalAmount: 2400, fundraiserUrl: 'https://example.com/fundraiser/denise', city: 'Macon', state: 'GA', lat: 32.85, lng: -83.62, imageUrl: null, status: 'approved', createdAt: daysAgo(3), supporterCount: 23 },
   { id: 'n2', ownerId: 'seed', firstName: 'Marcus', title: 'Get Marcus back on the road to work', story: 'My car’s transmission went out and I need it to get to my job at the plant 25 miles away. A local shop quoted $1,800.', need: 'car', goalAmount: 1800, fundraiserUrl: 'https://example.com/fundraiser/marcus', city: 'Warner Robins', state: 'GA', lat: 32.62, lng: -83.63, imageUrl: null, status: 'approved', createdAt: daysAgo(6), supporterCount: 11 },
   { id: 'n3', ownerId: 'seed', firstName: 'The Johnson family', title: 'Rebuilding after a house fire', story: 'We lost almost everything in a kitchen fire. Everyone is safe, thank God. We’re raising money for clothes, school supplies and a deposit on a new place.', need: 'disaster', goalAmount: 6000, fundraiserUrl: 'https://example.com/fundraiser/johnson', city: 'Jackson', state: 'MS', lat: 32.31, lng: -90.19, imageUrl: null, status: 'approved', createdAt: daysAgo(10), supporterCount: 64 },
@@ -146,6 +149,11 @@ export const seedNeighbors: NeighborRequest[] = [
   { id: 'n5', ownerId: 'seed', firstName: 'Rosa', title: 'Rosa’s medical bills after her stroke', story: 'Our mom had a stroke in September. Insurance covered some of it, but the rehab bills keep coming.', need: 'medical', goalAmount: 5000, fundraiserUrl: 'https://example.com/fundraiser/rosa', city: 'Houston', state: 'TX', lat: 29.75, lng: -95.37, imageUrl: null, status: 'approved', createdAt: daysAgo(14), supporterCount: 48 },
   { id: 'n6', ownerId: 'seed', firstName: 'James', title: 'Help James after being laid off', story: 'I was laid off after 12 years at the mill. I have interviews lined up but need help with utilities this winter.', need: 'job', goalAmount: 1200, fundraiserUrl: 'https://example.com/fundraiser/james', city: 'Milledgeville', state: 'GA', lat: 33.08, lng: -83.23, imageUrl: null, status: 'pending', createdAt: daysAgo(0), supporterCount: 0 },
 ];
+
+export const seedNeighbors: NeighborRequest[] = neighborSeeds.map((n) => ({
+  ...n,
+  reportedTotal: Math.min(n.goalAmount ?? Infinity, n.supporterCount * 40),
+}));
 
 type SeedWish = [kind: string, category: string, count: number, label: string, lat: number, lng: number];
 

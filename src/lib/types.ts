@@ -45,6 +45,8 @@ export type Business = {
   createdAt: string;
   followerCount: number;
   supporterCount: number;
+  /** Total of the amounts givers reported through BuildBack. Self-reported, not verified. */
+  reportedTotal: number;
 };
 
 export type ClaimStatus = 'claimed' | 'unclaimed';
@@ -109,6 +111,8 @@ export type NeighborRequest = {
   status: NeighborStatus;
   createdAt: string;
   supporterCount: number;
+  /** Total of the amounts givers reported through BuildBack. Self-reported, not verified. */
+  reportedTotal: number;
 };
 
 export type Wish = {
@@ -169,4 +173,6 @@ export type MyActivity = {
   followingIds: string[];
   /** Businesses this person nominated (any review status). */
   nominationIds: string[];
+  /** Businesses this person owns. */
+  ownedBusinessIds: string[];
 };

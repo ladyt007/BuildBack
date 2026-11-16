@@ -71,7 +71,10 @@ function upgrade(d: DemoDb): DemoDb {
     b.claimStatus ??= seed?.claimStatus ?? 'claimed';
     b.reviewStatus ??= 'approved';
     b.nominatedBy ??= seed?.nominatedBy ?? null;
+    b.reportedTotal ??= seed?.reportedTotal ?? 0;
   }
+  const neighborSeedById = new Map(seedNeighbors.map((n) => [n.id, n]));
+  for (const n of d.neighbors) n.reportedTotal ??= neighborSeedById.get(n.id)?.reportedTotal ?? 0;
   for (const seed of seedBusinesses) {
     if (!d.businesses.some((b) => b.id === seed.id)) d.businesses.push(seed);
   }
@@ -198,6 +201,7 @@ export const demoBackend: Backend = {
       createdAt: new Date().toISOString(),
       followerCount: 0,
       supporterCount: 0,
+      reportedTotal: 0,
     };
     d.businesses.unshift(business);
     await commit();
@@ -222,6 +226,7 @@ export const demoBackend: Backend = {
       createdAt: new Date().toISOString(),
       followerCount: 0,
       supporterCount: 0,
+      reportedTotal: 0,
     };
     d.businesses.unshift(business);
     d.nominations.unshift({
@@ -384,6 +389,7 @@ export const demoBackend: Backend = {
       status: 'pending',
       createdAt: new Date().toISOString(),
       supporterCount: 0,
+      reportedTotal: 0,
     };
     d.neighbors.unshift(request);
     await commit();
@@ -426,12 +432,13 @@ export const demoBackend: Backend = {
   async myActivity() {
     const d = await db();
     const profile = await this.currentProfile();
-    if (!profile) return { supports: [], wishes: [], followingIds: [], nominationIds: [] };
+    if (!profile) return { supports: [], wishes: [], followingIds: [], nominationIds: [], ownedBusinessIds: [] };
     return {
       supports: d.supports.filter((s) => s.userId === profile.id),
       wishes: d.wishes.filter((w) => w.userId === profile.id),
       followingIds: d.follows.filter((f) => f.userId === profile.id).map((f) => f.businessId),
       nominationIds: d.businesses.filter((b) => b.nominatedBy === profile.id).map((b) => b.id),
+      ownedBusinessIds: d.businesses.filter((b) => b.ownerId === profile.id).map((b) => b.id),
     };
   },
 
@@ -455,12 +462,11 @@ export const demoBackend: Backend = {
     const profile = await me();
     const firstTime = !d.supports.some((s) => s.userId === profile.id && s.targetId === targetId);
     d.supports.push({ id: newId(), userId: profile.id, targetType, targetId, amount, createdAt: new Date().toISOString() });
-    if (firstTime) {
-      const target =
-        targetType === 'business'
-          ? d.businesses.find((b) => b.id === targetId)
-          : d.neighbors.find((n) => n.id === targetId);
-      if (target) target.supporterCount += 1;
+    const target =
+      targetType === 'business' ? d.businesses.find((b) => b.id === targetId) : d.neighbors.find((n) => n.id === targetId);
+    if (target) {
+      if (firstTime) target.supporterCount += 1;
+      target.reportedTotal = (target.reportedTotal ?? 0) + (amount ?? 0);
     }
     await commit();
   },
