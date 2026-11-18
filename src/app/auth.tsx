@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
 
 import { Body, Button, Field, Screen, Title } from '@/components/ui';
 import { useColors } from '@/hooks/use-colors';
@@ -16,6 +16,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const isSignup = mode === 'signup';
@@ -25,6 +26,7 @@ export default function AuthScreen() {
     if (!canSubmit) return;
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       if (isSignup) await signUp(name, email, password);
       else await signIn(email, password);
@@ -32,7 +34,14 @@ export default function AuthScreen() {
       if (router.canGoBack()) router.back();
       else router.replace('/');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      const message = e instanceof Error ? e.message : 'Something went wrong. Please try again.';
+      // A new account that needs email confirmation isn't an error.
+      if (/check your email/i.test(message)) {
+        setNotice(`Almost there! We sent a confirmation link to ${email.trim()}. Tap it, then come back and sign in.`);
+        setMode('signin');
+      } else {
+        setError(message);
+      }
     } finally {
       setBusy(false);
     }
@@ -71,6 +80,11 @@ export default function AuthScreen() {
           onSubmitEditing={submit}
           error={error}
         />
+        {notice ? (
+          <View style={{ backgroundColor: colors.accentSoft, borderRadius: 12, padding: 12 }}>
+            <Text style={{ color: colors.text, fontSize: 15, lineHeight: 21 }}>📬 {notice}</Text>
+          </View>
+        ) : null}
         <Button label={isSignup ? 'Create my account' : 'Sign in'} onPress={submit} loading={busy} disabled={!canSubmit} />
         <Pressable onPress={() => { setMode(isSignup ? 'signin' : 'signup'); setError(null); }} style={{ alignSelf: 'center', padding: 8 }}>
           <Text style={{ color: colors.primary, fontWeight: '700' }}>
