@@ -86,8 +86,14 @@ Reviewers (`is_admin` in `profiles`) see four queues:
 
 ### Website (Netlify)
 
-Connect this repository in Netlify. `netlify.toml` already has the build settings. Add the same `EXPO_PUBLIC_…`
-values from your `.env` under **Site configuration → Environment variables**.
+The site is deployed by building it and uploading the finished files (no GitHub connection to Netlify):
+
+```bash
+npx expo export --platform web     # builds the site into dist/
+```
+
+Then upload `dist/` to the Netlify site, with the same `EXPO_PUBLIC_…` values from your `.env` set when you
+build. `netlify.toml` holds the settings that send every link (like `/business/123`) to the app.
 
 ### iPhone and Android (no Mac needed)
 

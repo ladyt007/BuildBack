@@ -10,7 +10,10 @@ It takes about 20 minutes and the free plan is enough to launch.
 
 ## 1. Create your Supabase project
 
-1. Go to **supabase.com** and click **Start your project**. Sign up with GitHub or your email.
+1. Go to **supabase.com** and click **Start your project**. Sign up with your email.
+   - Supabase offers to **connect GitHub** (when signing up, when creating a project, and under
+     Project Settings → Integrations). **Skip it.** BuildBack doesn't use it — the database is set up by
+     pasting files into the SQL Editor (step 2).
 2. Click **New project** and fill in:
    - **Name:** `buildback`
    - **Database password:** click **Generate a password** and save it in your password manager.
