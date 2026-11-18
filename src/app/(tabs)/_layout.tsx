@@ -22,6 +22,8 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
+        // Icons above labels on every screen size (wide screens otherwise put them side by side).
+        tabBarLabelPosition: 'below-icon',
         tabBarStyle: [
           { backgroundColor: colors.card, borderTopColor: colors.border },
           // On the website, hosting badges can sit in the bottom corners; keep the tabs above them.
