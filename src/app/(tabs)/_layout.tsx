@@ -1,9 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import type { ColorValue } from 'react-native';
+import { Platform, type ColorValue } from 'react-native';
 import { Tabs } from 'expo-router/js-tabs';
 
 import { useColors } from '@/hooks/use-colors';
 import type { IconName } from '@/components/ui';
+
+const WEB_BOTTOM_CLEARANCE = 44;
 
 function icon(name: IconName, focusedName: IconName) {
   function TabIcon({ color, focused, size }: { color: ColorValue; focused: boolean; size: number }) {
@@ -20,7 +22,11 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border },
+        tabBarStyle: [
+          { backgroundColor: colors.card, borderTopColor: colors.border },
+          // On the website, hosting badges can sit in the bottom corners; keep the tabs above them.
+          Platform.OS === 'web' && { height: 50 + WEB_BOTTOM_CLEARANCE, paddingBottom: WEB_BOTTOM_CLEARANCE },
+        ],
       }}>
       <Tabs.Screen name="index" options={{ title: 'Businesses', tabBarIcon: icon('storefront-outline', 'storefront') }} />
       <Tabs.Screen name="neighbors" options={{ title: 'Neighbors', tabBarIcon: icon('heart-outline', 'heart') }} />
