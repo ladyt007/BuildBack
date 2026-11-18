@@ -23,17 +23,40 @@ function claimLink(n: Nomination): string {
   return `${Config.siteUrl}/business/claim?id=${encodeURIComponent(n.businessId)}&code=${encodeURIComponent(n.inviteCode)}`;
 }
 
-/** The "you were added" message we send to a nominated business. */
-function inviteMessage(n: Nomination): string {
-  const hello = n.contactName ? `Hi ${n.contactName.trim()}!` : 'Hi there!';
-  return `${hello} Great news: a neighbor nominated ${n.businessName} on BuildBack, a free app that helps communities find and support local businesses.
+const TAGLINE = 'Build back our communities — one person, one business at a time.';
 
-Claim your free listing to add your own photos and story, post updates and let customers support you directly:
+/**
+ * The "you were added" invite we send to a nominated business: what BuildBack is, what they get, that it's
+ * free, and their claim link. `text` is a shorter version for text messages.
+ */
+function inviteMessage(n: Nomination, kind: 'email' | 'text' = 'email'): string {
+  const hello = n.contactName ? `Hi ${n.contactName.trim()}!` : 'Hi there!';
+  if (kind === 'text') {
+    return `${hello} A neighbor nominated ${n.businessName} on BuildBack, a free app that helps communities find and support local businesses. Claim your free listing to get found, share updates and receive support directly: ${claimLink(n)} (code ${n.inviteCode}). ${TAGLINE}`;
+  }
+  return `${hello}
+
+Great news: a neighbor nominated ${n.businessName} on BuildBack because they love what you do.
+
+BuildBack is a free app that helps communities find and support local businesses and neighbors in need. Our mission is simple: ${TAGLINE.charAt(0).toLowerCase()}${TAGLINE.slice(1)}
+
+When you claim your free listing, you can:
+• Get found by neighbors near you who are looking for businesses like yours
+• Receive support directly: add your Cash App, PayPal, Stripe or GoFundMe link, and every dollar goes straight to you
+• Share your story, photos and updates with the people who follow you
+• See what your community is wishing for, so you know what's in demand nearby
+• Set a goal, and choose what your page shows about the support you receive
+
+It's free to join and takes about a minute:
 ${claimLink(n)}
 
-Your invite code is ${n.inviteCode}. It takes about a minute.
+Your invite code is ${n.inviteCode}.
 
-— The BuildBack team`;
+Questions? Just reply to this message.
+
+With gratitude,
+The BuildBack team
+${TAGLINE}`;
 }
 
 /** Review area for the BuildBack team. Only reviewers (is_admin) can use it. */
@@ -75,8 +98,8 @@ export default function AdminScreen() {
   }
 
   async function sendInvite(n: Nomination, via: 'email' | 'text' | 'share') {
-    const body = inviteMessage(n);
-    const subject = `${n.businessName} was nominated on BuildBack`;
+    const body = inviteMessage(n, via === 'text' ? 'text' : 'email');
+    const subject = `🎉 ${n.businessName} was nominated on BuildBack`;
     if (via === 'email' && n.contactEmail) {
       await Linking.openURL(`mailto:${n.contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
     } else if (via === 'text' && n.contactPhone) {
