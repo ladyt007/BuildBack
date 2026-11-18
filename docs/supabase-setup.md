@@ -24,26 +24,19 @@ It takes about 20 minutes and the free plan is enough to launch.
 
 ## 2. Create the database tables
 
-The project folder `supabase/migrations/` has four files. Run them **one at a time, in order**:
+Everything the database needs is in **one file: `supabase/setup-all.sql`** (it combines the four files in
+`supabase/migrations/`, in order).
 
-| Order | File | What it adds |
-| --- | --- | --- |
-| 1 | `0001_initial_schema.sql` | Accounts, businesses, neighbors, wishes, follows, gifts, sponsors, security rules |
-| 2 | `0002_photos.sql` | Profile and business photos |
-| 3 | `0003_nominations_and_claims.sql` | Nominating businesses and claiming listings |
-| 4 | `0004_reported_totals.sql` | Giving totals on business and neighbor pages |
+1. Open `setup-all.sql` and copy **all** of it (on a computer: click inside it, press Ctrl+A / Cmd+A, then
+   Ctrl+C / Cmd+C).
+2. In Supabase, click **SQL Editor** in the left menu, then **New query** (or the **+** button).
+3. Click in the big empty box and paste.
+4. Click **Run** (bottom right, or Ctrl+Enter / Cmd+Enter).
+5. If Supabase warns about "destructive operations", click **Run this query** — that's expected.
+6. You should see **Success. No rows returned**.
 
-For each file:
-
-1. In GitHub, open the file (`ladyt007/BuildBack` → `supabase` → `migrations` → the file) and click the
-   **Copy raw file** button (two overlapping squares, top right of the file).
-2. In Supabase, click **SQL Editor** in the left menu, then **New query**.
-3. Paste, then click **Run** (bottom right).
-4. You should see **Success. No rows returned**. If you see a warning about "destructive operations", that's
-   expected for these files — click **Run this query**.
-
-If any file shows a red error, stop there and send me the error message. Don't run the next file until that
-one succeeds.
+If you see a red error instead, send me the message. Nothing will have been changed (the file runs as one
+all-or-nothing step), so it's safe to run again once it's fixed.
 
 ## 3. Turn on email sign-ups
 
