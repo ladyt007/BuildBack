@@ -4,6 +4,7 @@ import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { useColors } from '@/hooks/use-colors';
 import { formatMoney, type ImpactSummary } from '@/lib/gamification';
+import type { GivingDisplay } from '@/lib/types';
 import { Brand, Space } from '@/lib/theme';
 
 import { ProgressBar } from './ui';
@@ -116,27 +117,72 @@ export function GivingMeter({ impact }: { impact: ImpactSummary }) {
   );
 }
 
-/** "$1,240 given by 23 neighbors" with an optional bar toward a goal. */
+/** One line for the public summary, following what the business or neighbor chose to show. */
+export function givingSummary(
+  display: GivingDisplay,
+  total: number,
+  supporters: number,
+  goal: number | null | undefined
+): string | null {
+  const people = `${supporters.toLocaleString()} ${supporters === 1 ? 'neighbor' : 'neighbors'}`;
+  switch (display) {
+    case 'hidden':
+      return null;
+    case 'count':
+      if (supporters === 0) return goal ? `Working toward a ${formatMoney(goal)} goal` : null;
+      return `${people} ${supporters === 1 ? 'has' : 'have'} given${goal ? ` · goal ${formatMoney(goal)}` : ''}`;
+    case 'amount':
+      if (total === 0) return goal ? `Goal ${formatMoney(goal)}` : null;
+      return `${formatMoney(total)} given${goal ? ` of ${formatMoney(goal)}` : ' through BuildBack'}`;
+    default:
+      if (supporters === 0 && total === 0) return goal ? `Goal ${formatMoney(goal)}` : null;
+      return `${total > 0 ? `${formatMoney(total)} given by ` : ''}${people}${goal ? ` · goal ${formatMoney(goal)}` : ' through BuildBack'}`;
+  }
+}
+
+/**
+ * The public giving summary on a business or neighbor page, respecting their privacy choice.
+ * The owner always sees their full totals, marked as only visible to them.
+ */
 export function CommunityGiving({
   total,
   supporters,
   goal,
+  display = 'amount_and_count',
+  isOwner = false,
 }: {
   total: number;
   supporters: number;
   goal?: number | null;
+  display?: GivingDisplay;
+  isOwner?: boolean;
 }) {
   const colors = useColors();
-  if (supporters === 0 && total === 0) return null;
+  const summary = givingSummary(display, total, supporters, goal);
+  // A bar would reveal roughly how much was given, so only show it when the amount is public.
+  const showBar = !!goal && (display === 'amount_and_count' || display === 'amount');
+  const reached = showBar && !!goal && total >= goal;
+
+  if (!summary && !isOwner) return null;
   return (
     <View style={{ gap: 6 }}>
-      <Text style={{ color: colors.text, fontWeight: '700' }}>
-        💛 {total > 0 ? `${formatMoney(total)} given by ` : ''}
-        {supporters} {supporters === 1 ? 'neighbor' : 'neighbors'} through BuildBack
-        {goal ? <Text style={{ color: colors.textSecondary, fontWeight: '400' }}> · goal {formatMoney(goal)}</Text> : null}
-      </Text>
-      {goal ? <ProgressBar value={total / goal} color={colors.success} /> : null}
-      <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Amounts are reported by the people who gave.</Text>
+      {summary ? (
+        <Text style={{ color: colors.text, fontWeight: '700' }}>
+          💛 {summary}
+          {reached ? <Text style={{ color: colors.success }}>  🎉 Goal reached!</Text> : null}
+        </Text>
+      ) : null}
+      {showBar ? <ProgressBar value={total / goal!} color={colors.success} /> : null}
+      {summary && display !== 'count' ? (
+        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Amounts are reported by the people who gave.</Text>
+      ) : null}
+      {isOwner ? (
+        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+          🔒 Only you see this: {formatMoney(total)} from {supporters} {supporters === 1 ? 'supporter' : 'supporters'}
+          {goal ? ` toward your ${formatMoney(goal)} goal` : ''}.
+          {display === 'hidden' ? ' Your page keeps these private.' : ''}
+        </Text>
+      ) : null}
     </View>
   );
 }

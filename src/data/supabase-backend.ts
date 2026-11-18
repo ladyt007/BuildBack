@@ -70,8 +70,10 @@ const toBusiness = (r: Row): Business => ({
   nominatedBy: r.nominated_by ?? null,
   createdAt: r.created_at,
   followerCount: r.follower_count,
-  supporterCount: r.supporter_count,
+  supporterCount: Number(r.supporter_count ?? 0),
   reportedTotal: Number(r.reported_total ?? 0),
+  goalAmount: r.goal_amount != null ? Number(r.goal_amount) : null,
+  givingDisplay: r.giving_display ?? 'amount_and_count',
 });
 
 const fromBusiness = (b: Partial<NewBusiness>): Row => {
@@ -87,6 +89,8 @@ const fromBusiness = (b: Partial<NewBusiness>): Row => {
     lng: b.lng,
     image_url: b.imageUrl,
     photos: b.photos,
+    goal_amount: b.goalAmount,
+    giving_display: b.givingDisplay,
     support_url: b.supportUrl,
     website: b.website,
     phone: b.phone,
@@ -141,8 +145,9 @@ const toNeighbor = (r: Row): NeighborRequest => ({
   imageUrl: r.image_url,
   status: r.status,
   createdAt: r.created_at,
-  supporterCount: r.supporter_count,
+  supporterCount: Number(r.supporter_count ?? 0),
   reportedTotal: Number(r.reported_total ?? 0),
+  givingDisplay: r.giving_display ?? 'amount_and_count',
 });
 
 const fromNeighbor = (n: NewNeighborRequest): Row => ({
@@ -151,6 +156,7 @@ const fromNeighbor = (n: NewNeighborRequest): Row => ({
   story: n.story,
   need: n.need,
   goal_amount: n.goalAmount,
+  giving_display: n.givingDisplay,
   fundraiser_url: n.fundraiserUrl,
   city: n.city,
   state: n.state,
@@ -204,6 +210,44 @@ function inArea<Q extends { gte: any; lte: any }>(query: Q, area: AreaQuery): Q 
 }
 
 const LIST_LIMIT = 300;
+
+/**
+ * Every public column. The giving totals (reported_total, supporter_count) are left out on purpose:
+ * the database only reveals them through business_giving / neighbor_giving, which respect each
+ * person's "what my page shows" choice.
+ */
+const BUSINESS_COLS =
+  'id,owner_id,name,category,kind,ownership_tags,description,city,state,lat,lng,image_url,photos,support_url,' +
+  'website,phone,status,is_pro,featured_until,is_hidden,follower_count,created_at,claim_status,review_status,' +
+  'nominated_by,goal_amount,giving_display';
+const NEIGHBOR_COLS =
+  'id,owner_id,first_name,title,story,need,goal_amount,fundraiser_url,city,state,lat,lng,image_url,status,' +
+  'created_at,giving_display';
+
+type GivingRow = { id: string; reported_total: number | null; supporter_count: number | null };
+
+/** Adds the totals each business allows to be seen (owners and reviewers always see theirs). */
+async function withBusinessGiving(list: Business[]): Promise<Business[]> {
+  if (list.length === 0) return list;
+  const rows: GivingRow[] = check(await supabase.rpc('business_giving', { ids: list.map((b) => b.id) })) ?? [];
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return list.map((b) => ({
+    ...b,
+    reportedTotal: Number(byId.get(b.id)?.reported_total ?? 0),
+    supporterCount: Number(byId.get(b.id)?.supporter_count ?? 0),
+  }));
+}
+
+async function withNeighborGiving(list: NeighborRequest[]): Promise<NeighborRequest[]> {
+  if (list.length === 0) return list;
+  const rows: GivingRow[] = check(await supabase.rpc('neighbor_giving', { ids: list.map((n) => n.id) })) ?? [];
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return list.map((n) => ({
+    ...n,
+    reportedTotal: Number(byId.get(n.id)?.reported_total ?? 0),
+    supporterCount: Number(byId.get(n.id)?.supporter_count ?? 0),
+  }));
+}
 const PHOTO_BUCKET = 'photos';
 
 function base64ToBytes(base64: string): Uint8Array {
@@ -274,13 +318,14 @@ export const supabaseBackend: Backend = {
   },
 
   async listBusinesses(area) {
-    const rows = check(await inArea(supabase.from('businesses').select('*'), area).limit(LIST_LIMIT));
-    return sortBusinesses(withinArea((rows ?? []).map(toBusiness), area), area.center);
+    const rows = check(await inArea(supabase.from('businesses').select(BUSINESS_COLS), area).limit(LIST_LIMIT));
+    const list = withinArea((rows ?? []).map(toBusiness), area);
+    return sortBusinesses(await withBusinessGiving(list), area.center);
   },
 
   async getBusiness(id) {
-    const row = check(await supabase.from('businesses').select('*').eq('id', id).maybeSingle());
-    return row ? toBusiness(row) : null;
+    const row = check(await supabase.from('businesses').select(BUSINESS_COLS).eq('id', id).maybeSingle());
+    return row ? (await withBusinessGiving([toBusiness(row)]))[0] : null;
   },
 
   async createBusiness(input) {
@@ -289,19 +334,23 @@ export const supabaseBackend: Backend = {
       await supabase
         .from('businesses')
         .insert({ ...fromBusiness(input), owner_id })
-        .select()
+        .select(BUSINESS_COLS)
         .single()
     );
     return toBusiness(row);
   },
 
   async updateBusiness(id, patch) {
-    return toBusiness(one(await supabase.from('businesses').update(fromBusiness(patch)).eq('id', id).select().single()));
+    const row = one<Row>(
+      await supabase.from('businesses').update(fromBusiness(patch)).eq('id', id).select(BUSINESS_COLS).single()
+    );
+    return (await withBusinessGiving([toBusiness(row)]))[0];
   },
 
   async myBusinesses() {
     const id = await userId();
-    return (check(await supabase.from('businesses').select('*').eq('owner_id', id)) ?? []).map(toBusiness);
+    const rows = check(await supabase.from('businesses').select(BUSINESS_COLS).eq('owner_id', id)) ?? [];
+    return withBusinessGiving(rows.map(toBusiness));
   },
 
   async nominateBusiness(input) {
@@ -329,7 +378,7 @@ export const supabaseBackend: Backend = {
       check(
         await supabase
           .from('businesses')
-          .select('*')
+          .select(BUSINESS_COLS)
           .in('id', rows.map((r) => r.business_id))
           .eq('claim_status', 'unclaimed')
           .neq('review_status', 'rejected')
@@ -412,33 +461,48 @@ export const supabaseBackend: Backend = {
 
   async listNeighbors(area) {
     const rows = check(
-      await inArea(supabase.from('neighbor_requests').select('*').in('status', ['approved', 'fulfilled']), area).limit(
-        LIST_LIMIT
-      )
+      await inArea(
+        supabase.from('neighbor_requests').select(NEIGHBOR_COLS).in('status', ['approved', 'fulfilled']),
+        area
+      ).limit(LIST_LIMIT)
     );
-    return sortNeighbors(withinArea((rows ?? []).map(toNeighbor), area), area.center);
+    const list = withinArea((rows ?? []).map(toNeighbor), area);
+    return sortNeighbors(await withNeighborGiving(list), area.center);
   },
 
   async getNeighbor(id) {
-    const row = check(await supabase.from('neighbor_requests').select('*').eq('id', id).maybeSingle());
-    return row ? toNeighbor(row) : null;
+    const row = check(await supabase.from('neighbor_requests').select(NEIGHBOR_COLS).eq('id', id).maybeSingle());
+    return row ? (await withNeighborGiving([toNeighbor(row)]))[0] : null;
   },
 
   async createNeighborRequest(input) {
     const owner_id = await userId();
     return toNeighbor(
-      one(await supabase.from('neighbor_requests').insert({ ...fromNeighbor(input), owner_id }).select().single())
+      one<Row>(
+        await supabase.from('neighbor_requests').insert({ ...fromNeighbor(input), owner_id }).select(NEIGHBOR_COLS).single()
+      )
     );
   },
 
   async myNeighborRequests() {
     const id = await userId();
-    return (check(await supabase.from('neighbor_requests').select('*').eq('owner_id', id)) ?? []).map(toNeighbor);
+    const rows = check(await supabase.from('neighbor_requests').select(NEIGHBOR_COLS).eq('owner_id', id)) ?? [];
+    return withNeighborGiving(rows.map(toNeighbor));
+  },
+
+  async updateNeighborRequest(id, patch) {
+    const row: Row = {};
+    if (patch.goalAmount !== undefined) row.goal_amount = patch.goalAmount;
+    if (patch.givingDisplay !== undefined) row.giving_display = patch.givingDisplay;
+    const updated = one<Row>(
+      await supabase.from('neighbor_requests').update(row).eq('id', id).select(NEIGHBOR_COLS).single()
+    );
+    return (await withNeighborGiving([toNeighbor(updated)]))[0];
   },
 
   async listPendingNeighbors() {
     const rows = check(
-      await supabase.from('neighbor_requests').select('*').eq('status', 'pending').order('created_at').limit(100)
+      await supabase.from('neighbor_requests').select(NEIGHBOR_COLS).eq('status', 'pending').order('created_at').limit(100)
     );
     return (rows ?? []).map(toNeighbor);
   },

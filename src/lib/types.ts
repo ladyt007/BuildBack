@@ -15,6 +15,9 @@ export type Profile = {
   avatarUrl?: string | null;
 };
 
+/** What a business or neighbor shows publicly about the gifts they receive. */
+export type GivingDisplay = 'amount_and_count' | 'amount' | 'count' | 'hidden';
+
 export type BusinessStatus = 'open' | 'reopening' | 'struggling' | 'temporarily_closed';
 
 export type Business = {
@@ -47,6 +50,9 @@ export type Business = {
   supporterCount: number;
   /** Total of the amounts givers reported through BuildBack. Self-reported, not verified. */
   reportedTotal: number;
+  /** Optional fundraising goal; null means open to any amount. */
+  goalAmount: number | null;
+  givingDisplay: GivingDisplay;
 };
 
 export type ClaimStatus = 'claimed' | 'unclaimed';
@@ -113,6 +119,7 @@ export type NeighborRequest = {
   supporterCount: number;
   /** Total of the amounts givers reported through BuildBack. Self-reported, not verified. */
   reportedTotal: number;
+  givingDisplay: GivingDisplay;
 };
 
 export type Wish = {

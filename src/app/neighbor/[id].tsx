@@ -3,6 +3,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, StyleSheet, Text, View } from 'react-native';
 
+import { GivingSettings, givingSettingsFrom, parseGoal } from '@/components/giving-settings';
 import { CommunityGiving } from '@/components/impact-meters';
 import { Body, Button, Card, EmptyState, Screen, Title } from '@/components/ui';
 import { backend } from '@/data';
@@ -79,18 +80,26 @@ export default function NeighborScreen() {
       <Body>{n.story}</Body>
 
       <Card>
-        {n.supporterCount > 0 || n.reportedTotal > 0 ? (
-          <CommunityGiving total={n.reportedTotal ?? 0} supporters={n.supporterCount} goal={n.goalAmount} />
-        ) : (
+        {!isOwner && nobodyHasGivenYet(n) ? (
           <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16 }}>
             Be the first to help {n.firstName}
-            {n.goalAmount ? ` · goal $${n.goalAmount.toLocaleString()}` : ''}
+            {n.goalAmount && n.givingDisplay !== 'hidden' ? ` · goal $${n.goalAmount.toLocaleString()}` : ''}
           </Text>
+        ) : (
+          <CommunityGiving
+            total={n.reportedTotal ?? 0}
+            supporters={n.supporterCount}
+            goal={n.goalAmount}
+            display={n.givingDisplay}
+            isOwner={isOwner}
+          />
         )}
         <Body muted style={{ fontSize: 13 }}>
           Reviewed by the BuildBack team. Your gift goes directly to {n.firstName}’s fundraiser.
         </Body>
       </Card>
+
+      {isOwner ? <NeighborGivingEditor request={n} onSaved={setN} /> : null}
 
       {n.status === 'approved' ? (
         <View style={{ gap: Space.sm }}>
@@ -117,3 +126,44 @@ const styles = StyleSheet.create({
   hero: { borderRadius: 20, height: 150, alignItems: 'center', justifyContent: 'center', gap: Space.sm },
   heroLabel: { color: '#fff', fontWeight: '800', fontSize: 16 },
 });
+
+/** Lets the person who asked for help change their goal and what their page shows. */
+function NeighborGivingEditor({ request, onSaved }: { request: NeighborRequest; onSaved: (n: NeighborRequest) => void }) {
+  const colors = useColors();
+  const { touch } = useApp();
+  const [value, setValue] = useState(givingSettingsFrom(request.givingDisplay, request.goalAmount));
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function save() {
+    const goal = parseGoal(value);
+    if (goal.error) return setMessage(goal.error);
+    setSaving(true);
+    setMessage(null);
+    try {
+      onSaved(await backend.updateNeighborRequest(request.id, { goalAmount: goal.goalAmount, givingDisplay: value.display }));
+      touch();
+      setMessage('Saved ✓');
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'Something went wrong.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card style={{ gap: Space.md, borderColor: colors.accent }}>
+      <Text style={{ color: colors.text, fontWeight: '800', fontSize: 17 }}>Your page settings</Text>
+      <GivingSettings value={value} onChange={setValue} />
+      <Button label="Save" small onPress={save} loading={saving} style={{ alignSelf: 'flex-start' }} />
+      {message ? <Text style={{ color: message.startsWith('Saved') ? colors.success : colors.danger }}>{message}</Text> : null}
+    </Card>
+  );
+}
+
+/** Uses only what the person chose to show (with "amount only", the supporter count is hidden). */
+function nobodyHasGivenYet(n: NeighborRequest): boolean {
+  if (n.givingDisplay === 'hidden') return false;
+  if (n.givingDisplay === 'amount') return n.reportedTotal === 0;
+  return n.supporterCount === 0;
+}

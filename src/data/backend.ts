@@ -36,10 +36,12 @@ export type NewBusiness = Pick<
   | 'status'
   | 'imageUrl'
   | 'photos'
+  | 'goalAmount'
+  | 'givingDisplay'
 >;
 
 /** A business added by someone who isn't the owner. The contact fields are private. */
-export type NewNomination = Omit<NewBusiness, 'supportUrl' | 'status'> & {
+export type NewNomination = Omit<NewBusiness, 'supportUrl' | 'status' | 'goalAmount' | 'givingDisplay'> & {
   relationship: NominatorRelationship;
   reason: string;
   contactName: string | null;
@@ -62,7 +64,17 @@ export type NominationForReview = { business: Business; nomination: Nomination }
 
 export type NewNeighborRequest = Pick<
   NeighborRequest,
-  'firstName' | 'title' | 'story' | 'need' | 'goalAmount' | 'fundraiserUrl' | 'city' | 'state' | 'lat' | 'lng'
+  | 'firstName'
+  | 'title'
+  | 'story'
+  | 'need'
+  | 'goalAmount'
+  | 'givingDisplay'
+  | 'fundraiserUrl'
+  | 'city'
+  | 'state'
+  | 'lat'
+  | 'lng'
 >;
 
 export type NewWish = Pick<Wish, 'category' | 'kind' | 'note' | 'lat' | 'lng' | 'placeLabel'>;
@@ -109,6 +121,11 @@ export interface Backend {
   getNeighbor(id: string): Promise<NeighborRequest | null>;
   createNeighborRequest(input: NewNeighborRequest): Promise<NeighborRequest>;
   myNeighborRequests(): Promise<NeighborRequest[]>;
+  /** The person who asked for help can change their goal and what their page shows. */
+  updateNeighborRequest(
+    id: string,
+    patch: Partial<Pick<NeighborRequest, 'goalAmount' | 'givingDisplay'>>
+  ): Promise<NeighborRequest>;
   listPendingNeighbors(): Promise<NeighborRequest[]>;
   reviewNeighbor(id: string, approve: boolean): Promise<void>;
 

@@ -72,9 +72,14 @@ function upgrade(d: DemoDb): DemoDb {
     b.reviewStatus ??= 'approved';
     b.nominatedBy ??= seed?.nominatedBy ?? null;
     b.reportedTotal ??= seed?.reportedTotal ?? 0;
+    b.goalAmount ??= seed?.goalAmount ?? null;
+    b.givingDisplay ??= seed?.givingDisplay ?? 'amount_and_count';
   }
   const neighborSeedById = new Map(seedNeighbors.map((n) => [n.id, n]));
-  for (const n of d.neighbors) n.reportedTotal ??= neighborSeedById.get(n.id)?.reportedTotal ?? 0;
+  for (const n of d.neighbors) {
+    n.reportedTotal ??= neighborSeedById.get(n.id)?.reportedTotal ?? 0;
+    n.givingDisplay ??= neighborSeedById.get(n.id)?.givingDisplay ?? 'amount_and_count';
+  }
   for (const seed of seedBusinesses) {
     if (!d.businesses.some((b) => b.id === seed.id)) d.businesses.push(seed);
   }
@@ -223,6 +228,8 @@ export const demoBackend: Backend = {
       claimStatus: 'unclaimed',
       reviewStatus: 'pending',
       nominatedBy: profile.id,
+      goalAmount: null,
+      givingDisplay: 'amount_and_count',
       createdAt: new Date().toISOString(),
       followerCount: 0,
       supporterCount: 0,
@@ -400,6 +407,16 @@ export const demoBackend: Backend = {
     const d = await db();
     const profile = await me();
     return d.neighbors.filter((n) => n.ownerId === profile.id);
+  },
+
+  async updateNeighborRequest(id, patch) {
+    const d = await db();
+    const profile = await me();
+    const n = d.neighbors.find((x) => x.id === id);
+    if (!n || n.ownerId !== profile.id) throw new Error('You can only change your own request.');
+    Object.assign(n, patch);
+    await commit();
+    return n;
   },
 
   async listPendingNeighbors() {

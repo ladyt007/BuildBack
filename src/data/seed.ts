@@ -7,13 +7,14 @@ import type { Business, NeighborRequest, Nomination, Sponsor, StatusUpdate, Wish
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 const daysFromNow = (n: number) => new Date(Date.now() + n * 86400000).toISOString();
 
-type SeedBiz = Omit<Business, 'id' | 'ownerId' | 'createdAt' | 'isPro' | 'featuredUntil' | 'imageUrl' | 'photos' | 'website' | 'phone' | 'claimStatus' | 'reviewStatus' | 'nominatedBy' | 'reportedTotal'> &
+type SeedBiz = Omit<Business, 'id' | 'ownerId' | 'createdAt' | 'isPro' | 'featuredUntil' | 'imageUrl' | 'photos' | 'website' | 'phone' | 'claimStatus' | 'reviewStatus' | 'nominatedBy' | 'reportedTotal' | 'goalAmount' | 'givingDisplay'> &
+  Partial<Pick<Business, 'goalAmount' | 'givingDisplay'>> &
   Partial<Pick<Business, 'isPro' | 'featuredUntil' | 'website' | 'phone'>>;
 
 const biz: SeedBiz[] = [
   { name: 'Fresh Fade Barbershop', category: 'beauty', kind: 'Barber shop', ownershipTags: ['Black-owned', 'Veteran-owned'], description: 'Classic cuts, hot towel shaves and a chair for every generation. Back open after a tough year and grateful for every client.', city: 'Macon', state: 'GA', lat: 32.8407, lng: -83.6324, supportUrl: 'https://example.com/support/fresh-fade', status: 'open', followerCount: 214, supporterCount: 37, featuredUntil: daysFromNow(5) },
   { name: 'Crowned & Coiled Natural Hair', category: 'beauty', kind: 'Natural hair salon', ownershipTags: ['Black-owned', 'Woman-owned'], description: 'Locs, twists, silk presses and braids. We specialize in healthy natural hair care.', city: 'Warner Robins', state: 'GA', lat: 32.613, lng: -83.6242, supportUrl: 'https://example.com/support/crowned', status: 'reopening', followerCount: 162, supporterCount: 21 },
-  { name: 'Mama Dee’s Soul Kitchen', category: 'food', kind: 'Soul food restaurant', ownershipTags: ['Black-owned', 'Family-owned', 'Woman-owned'], description: 'Smothered chicken, collards and peach cobbler like Sunday at Grandma’s. Three generations in the kitchen.', city: 'Macon', state: 'GA', lat: 32.8301, lng: -83.6488, supportUrl: 'https://example.com/support/mama-dees', status: 'struggling', followerCount: 389, supporterCount: 58, isPro: true },
+  { name: 'Mama Dee’s Soul Kitchen', category: 'food', kind: 'Soul food restaurant', ownershipTags: ['Black-owned', 'Family-owned', 'Woman-owned'], description: 'Smothered chicken, collards and peach cobbler like Sunday at Grandma’s. Three generations in the kitchen.', city: 'Macon', state: 'GA', lat: 32.8301, lng: -83.6488, supportUrl: 'https://example.com/support/mama-dees', status: 'struggling', followerCount: 389, supporterCount: 58, isPro: true, goalAmount: 3000 },
   { name: 'Kente & Co. Boutique', category: 'clothing', kind: 'Afrocentric clothing', ownershipTags: ['Black-owned', 'Woman-owned', 'Immigrant-owned'], description: 'Handmade Afrocentric fashion, head wraps and accessories made with fabric from Ghana and Nigeria.', city: 'Milledgeville', state: 'GA', lat: 33.0801, lng: -83.2321, supportUrl: 'https://example.com/support/kente', status: 'open', followerCount: 97, supporterCount: 12 },
   { name: 'Sweet Auburn Coffee', category: 'food', kind: 'Coffee shop', ownershipTags: ['Black-owned'], description: 'Locally roasted beans, fresh pastries and a gathering place for the neighborhood.', city: 'Atlanta', state: 'GA', lat: 33.755, lng: -84.375, supportUrl: 'https://example.com/support/sweet-auburn', status: 'open', followerCount: 512, supporterCount: 44, isPro: true, featuredUntil: daysFromNow(3) },
   { name: 'Decatur Little Learners', category: 'services', kind: 'Daycare', ownershipTags: ['Woman-owned', 'Black-owned'], description: 'Licensed early learning center with a focus on literacy and culture.', city: 'Decatur', state: 'GA', lat: 33.7748, lng: -84.2963, supportUrl: null, status: 'open', followerCount: 76, supporterCount: 0 },
@@ -49,6 +50,8 @@ export const seedBusinesses: Business[] = biz.map((b, i) => ({
   photos: [],
   // Sample totals: roughly what supporters might report giving.
   reportedTotal: b.supporterCount * 35,
+  goalAmount: b.goalAmount ?? null,
+  givingDisplay: b.givingDisplay ?? 'amount_and_count',
   website: b.website ?? null,
   phone: b.phone ?? null,
   isPro: b.isPro ?? false,
@@ -84,6 +87,8 @@ seedBusinesses.push({
   followerCount: 0,
   supporterCount: 0,
   reportedTotal: 0,
+  goalAmount: null,
+  givingDisplay: 'amount_and_count',
 });
 
 export const seedNominations: Nomination[] = [
@@ -141,18 +146,19 @@ export const seedStatusUpdates: StatusUpdate[] = [
   { id: 'u7', businessId: 'b17', body: 'Rent went up 40%. We’re fighting to stay. Come have a pint with us.', createdAt: daysAgo(6) },
 ];
 
-const neighborSeeds: Omit<NeighborRequest, 'reportedTotal'>[] = [
+const neighborSeeds: (Omit<NeighborRequest, 'reportedTotal' | 'givingDisplay'> & Partial<Pick<NeighborRequest, 'givingDisplay'>>)[] = [
   { id: 'n1', ownerId: 'seed', firstName: 'Denise', title: 'Help Denise keep her home after surgery', story: 'I’m a school bus driver in Macon. After back surgery I’ve been out of work for two months and fell behind on rent. I go back to work in January and just need to bridge the gap.', need: 'rent', goalAmount: 2400, fundraiserUrl: 'https://example.com/fundraiser/denise', city: 'Macon', state: 'GA', lat: 32.85, lng: -83.62, imageUrl: null, status: 'approved', createdAt: daysAgo(3), supporterCount: 23 },
   { id: 'n2', ownerId: 'seed', firstName: 'Marcus', title: 'Get Marcus back on the road to work', story: 'My car’s transmission went out and I need it to get to my job at the plant 25 miles away. A local shop quoted $1,800.', need: 'car', goalAmount: 1800, fundraiserUrl: 'https://example.com/fundraiser/marcus', city: 'Warner Robins', state: 'GA', lat: 32.62, lng: -83.63, imageUrl: null, status: 'approved', createdAt: daysAgo(6), supporterCount: 11 },
   { id: 'n3', ownerId: 'seed', firstName: 'The Johnson family', title: 'Rebuilding after a house fire', story: 'We lost almost everything in a kitchen fire. Everyone is safe, thank God. We’re raising money for clothes, school supplies and a deposit on a new place.', need: 'disaster', goalAmount: 6000, fundraiserUrl: 'https://example.com/fundraiser/johnson', city: 'Jackson', state: 'MS', lat: 32.31, lng: -90.19, imageUrl: null, status: 'approved', createdAt: daysAgo(10), supporterCount: 64 },
   { id: 'n4', ownerId: 'seed', firstName: 'Aaliyah', title: 'Aaliyah’s nursing school books & scrubs', story: 'First in my family to go to college! I got into the nursing program but can’t cover books, scrubs and my clinical fees.', need: 'school', goalAmount: 900, fundraiserUrl: 'https://example.com/fundraiser/aaliyah', city: 'Detroit', state: 'MI', lat: 42.34, lng: -83.05, imageUrl: null, status: 'approved', createdAt: daysAgo(2), supporterCount: 31 },
-  { id: 'n5', ownerId: 'seed', firstName: 'Rosa', title: 'Rosa’s medical bills after her stroke', story: 'Our mom had a stroke in September. Insurance covered some of it, but the rehab bills keep coming.', need: 'medical', goalAmount: 5000, fundraiserUrl: 'https://example.com/fundraiser/rosa', city: 'Houston', state: 'TX', lat: 29.75, lng: -95.37, imageUrl: null, status: 'approved', createdAt: daysAgo(14), supporterCount: 48 },
+  { id: 'n5', ownerId: 'seed', firstName: 'Rosa', title: 'Rosa’s medical bills after her stroke', story: 'Our mom had a stroke in September. Insurance covered some of it, but the rehab bills keep coming.', need: 'medical', goalAmount: 5000, fundraiserUrl: 'https://example.com/fundraiser/rosa', city: 'Houston', state: 'TX', lat: 29.75, lng: -95.37, imageUrl: null, status: 'approved', createdAt: daysAgo(14), supporterCount: 48, givingDisplay: 'count' },
   { id: 'n6', ownerId: 'seed', firstName: 'James', title: 'Help James after being laid off', story: 'I was laid off after 12 years at the mill. I have interviews lined up but need help with utilities this winter.', need: 'job', goalAmount: 1200, fundraiserUrl: 'https://example.com/fundraiser/james', city: 'Milledgeville', state: 'GA', lat: 33.08, lng: -83.23, imageUrl: null, status: 'pending', createdAt: daysAgo(0), supporterCount: 0 },
 ];
 
 export const seedNeighbors: NeighborRequest[] = neighborSeeds.map((n) => ({
   ...n,
   reportedTotal: Math.min(n.goalAmount ?? Infinity, n.supporterCount * 40),
+  givingDisplay: n.givingDisplay ?? 'amount_and_count',
 }));
 
 type SeedWish = [kind: string, category: string, count: number, label: string, lat: number, lng: number];

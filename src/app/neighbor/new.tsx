@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { useCelebrate } from '@/components/celebration';
+import { GivingSettings, givingSettingsFrom, parseGoal, type GivingSettingsValue } from '@/components/giving-settings';
 import { PlaceField, splitPlaceLabel } from '@/components/place-field';
 import { Body, Button, Card, Chip, Field, Screen } from '@/components/ui';
 import { backend } from '@/data';
@@ -21,7 +22,7 @@ export default function AskForHelpScreen() {
   const [need, setNeed] = useState('rent');
   const [title, setTitle] = useState('');
   const [story, setStory] = useState('');
-  const [goal, setGoal] = useState('');
+  const [giving, setGiving] = useState<GivingSettingsValue>(givingSettingsFrom(undefined, null));
   const [link, setLink] = useState('');
   const [placeInput, setPlace] = useState<Place | null>(null);
   const [agreed, setAgreed] = useState(false);
@@ -45,7 +46,8 @@ export default function AskForHelpScreen() {
     if (!place) return setError('Please add your ZIP code.');
     if (!agreed) return setError('Please confirm the statement below.');
     const { city, state } = splitPlaceLabel(place.label);
-    const parsedGoal = parseFloat(goal.replace(/[^0-9.]/g, ''));
+    const goal = parseGoal(giving);
+    if (goal.error) return setError(goal.error);
     setSaving(true);
     try {
       await backend.createNeighborRequest({
@@ -53,7 +55,8 @@ export default function AskForHelpScreen() {
         title: title.trim(),
         story: story.trim(),
         need,
-        goalAmount: Number.isFinite(parsedGoal) && parsedGoal > 0 ? parsedGoal : null,
+        goalAmount: goal.goalAmount,
+        givingDisplay: giving.display,
         fundraiserUrl: link.trim(),
         city,
         state,
@@ -105,7 +108,10 @@ export default function AskForHelpScreen() {
         multiline
         maxLength={2000}
       />
-      <Field label="Goal (optional)" value={goal} onChangeText={setGoal} placeholder="$1,500" keyboardType="decimal-pad" />
+      <Card style={{ gap: Space.md }}>
+        <Text style={{ color: colors.text, fontWeight: '800', fontSize: 17 }}>💛 Gifts to you</Text>
+        <GivingSettings value={giving} onChange={setGiving} />
+      </Card>
       <Field
         label="Link to your fundraiser"
         value={link}

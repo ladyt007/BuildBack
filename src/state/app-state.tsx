@@ -443,7 +443,7 @@ function GiftPrompt({
               setAmount(t);
               setQuick(null);
             }}
-            hint="Only you see your exact gifts. We add them to an anonymous total on their page."
+            hint="Only you see your exact gifts. They add to an anonymous total, which they can choose to show on their page."
           />
           <Button
             label={chosen ? `Yes, I gave ${formatMoney(chosen)}! 🎉` : 'Yes, I gave! 🎉'}

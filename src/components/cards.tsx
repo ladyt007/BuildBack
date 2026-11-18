@@ -12,6 +12,7 @@ import { Brand, Radius, Space } from '@/lib/theme';
 import type { Business, BusinessStatus, LatLng, NeighborRequest, Sponsor } from '@/lib/types';
 import { useApp } from '@/state/app-state';
 
+import { givingSummary } from './impact-meters';
 import { Initials, Pill, ProgressBar } from './ui';
 
 export const STATUS_LABEL: Record<BusinessStatus, { label: string; color: string }> = {
@@ -87,7 +88,7 @@ export function BusinessCard({ business, center }: { business: Business; center:
           {business.ownershipTags.slice(0, 2).map((t) => (
             <Pill key={t} label={t} color={colors.muted} textColor={colors.text} />
           ))}
-          {business.supporterCount > 0 ? (
+          {business.supporterCount > 0 && business.givingDisplay !== 'hidden' && business.givingDisplay !== 'amount' ? (
             <Text style={[styles.meta, { color: colors.textSecondary, marginLeft: 'auto' }]}>
               💛 {business.supporterCount} supporters
             </Text>
@@ -126,12 +127,14 @@ export function NeighborCard({ neighbor, center }: { neighbor: NeighborRequest; 
         <Text style={[styles.desc, { color: colors.text }]} numberOfLines={2}>
           {neighbor.story}
         </Text>
-        {neighbor.goalAmount ? <ProgressBar value={neighbor.reportedTotal / neighbor.goalAmount} color={colors.success} height={8} /> : null}
-        <Text style={[styles.meta, { color: colors.textSecondary }]}>
-          💛 {neighbor.supporterCount} {neighbor.supporterCount === 1 ? 'neighbor has' : 'neighbors have'} helped
-          {neighbor.reportedTotal > 0 ? ` · ${formatMoney(neighbor.reportedTotal)} given` : ''}
-          {neighbor.goalAmount ? ` of ${formatMoney(neighbor.goalAmount)}` : ''}
-        </Text>
+        {neighbor.goalAmount && (neighbor.givingDisplay === 'amount_and_count' || neighbor.givingDisplay === 'amount') ? (
+          <ProgressBar value={neighbor.reportedTotal / neighbor.goalAmount} color={colors.success} height={8} />
+        ) : null}
+        {givingSummary(neighbor.givingDisplay, neighbor.reportedTotal, neighbor.supporterCount, neighbor.goalAmount) ? (
+          <Text style={[styles.meta, { color: colors.textSecondary }]}>
+            💛 {givingSummary(neighbor.givingDisplay, neighbor.reportedTotal, neighbor.supporterCount, neighbor.goalAmount)}
+          </Text>
+        ) : null}
       </Pressable>
     </Link>
   );

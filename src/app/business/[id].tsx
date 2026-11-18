@@ -139,7 +139,13 @@ export default function BusinessScreen() {
       <PhotoGallery photos={business.photos ?? []} />
 
       <Text style={{ color: colors.textSecondary }}>❤️ {business.followerCount} followers</Text>
-      <CommunityGiving total={business.reportedTotal ?? 0} supporters={business.supporterCount} />
+      <CommunityGiving
+        total={business.reportedTotal ?? 0}
+        supporters={business.supporterCount}
+        goal={business.goalAmount}
+        display={business.givingDisplay}
+        isOwner={isOwner}
+      />
 
       <View style={{ gap: Space.sm }}>
         {business.supportUrl ? (

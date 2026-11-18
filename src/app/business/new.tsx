@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { CoverPhotoField, GalleryField } from '@/components/photos';
+import { GivingSettings, givingSettingsFrom, parseGoal, type GivingSettingsValue } from '@/components/giving-settings';
 import { PlaceField, splitPlaceLabel } from '@/components/place-field';
-import { Body, Button, Chip, Field, Screen } from '@/components/ui';
+import { Body, Button, Card, Chip, Field, Screen } from '@/components/ui';
 import { backend, type NewBusiness } from '@/data';
 import { useColors } from '@/hooks/use-colors';
 import { BUSINESS_CATEGORIES, OWNERSHIP_TAGS, businessCategory } from '@/lib/categories';
@@ -36,6 +37,7 @@ export default function BusinessFormScreen() {
   const [place, setPlace] = useState<Place | null>(null);
   const [status, setStatus] = useState<BusinessStatus>('open');
   const [supportUrl, setSupportUrl] = useState('');
+  const [giving, setGiving] = useState<GivingSettingsValue>(givingSettingsFrom(undefined, null));
   const [website, setWebsite] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +61,7 @@ export default function BusinessFormScreen() {
       setPlace({ lat: b.lat, lng: b.lng, label: `${b.city}, ${b.state}` });
       setStatus(b.status);
       setSupportUrl(b.supportUrl ?? '');
+      setGiving(givingSettingsFrom(b.givingDisplay, b.goalAmount));
       setWebsite(b.website ?? '');
       setPhone(b.phone ?? '');
     });
@@ -71,8 +74,12 @@ export default function BusinessFormScreen() {
     if (!place) return setError('Please add your location so neighbors can find you.');
     if (supportUrl && !looksLikeUrl(supportUrl)) return setError('Your support link should start with https://');
     if (website && !looksLikeUrl(website)) return setError('Your website should start with https://');
+    const goal = parseGoal(giving);
+    if (goal.error) return setError(goal.error);
     const { city, state } = splitPlaceLabel(place.label);
     const input: NewBusiness = {
+      goalAmount: goal.goalAmount,
+      givingDisplay: giving.display,
       name: name.trim(),
       category,
       kind: kind.trim(),
@@ -186,6 +193,10 @@ export default function BusinessFormScreen() {
         keyboardType="url"
         hint="A Stripe, PayPal, Cash App, Venmo or GoFundMe link. Gifts go straight to you — BuildBack never touches the money."
       />
+      <Card style={{ gap: Space.md }}>
+        <Text style={{ color: colors.text, fontWeight: '800', fontSize: 17 }}>💛 Gifts to your business</Text>
+        <GivingSettings value={giving} onChange={setGiving} who="your business" />
+      </Card>
       <Field label="Website (optional)" value={website} onChangeText={setWebsite} placeholder="https://" autoCapitalize="none" keyboardType="url" />
       <Field label="Phone (optional)" value={phone} onChangeText={setPhone} placeholder="(478) 555-0123" keyboardType="phone-pad" />
 
