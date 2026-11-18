@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "app.buildback.community",
-      "supportsTablet": true,
+      "supportsTablet": false,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "BuildBack uses your location to show businesses, neighbors and wishes near you.",
         "ITSAppUsesNonExemptEncryption": false

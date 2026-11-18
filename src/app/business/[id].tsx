@@ -7,11 +7,13 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { STATUS_LABEL } from '@/components/cards';
 import { CommunityGiving } from '@/components/impact-meters';
 import { PhotoGallery } from '@/components/photos';
+import { ReportButton } from '@/components/report-sheet';
 import { Body, Button, Card, EmptyState, Field, Initials, Pill, Row, Screen, Title } from '@/components/ui';
 import { backend } from '@/data';
 import { isFeatured } from '@/data/shared';
 import { useColors } from '@/hooks/use-colors';
 import { businessCategory } from '@/lib/categories';
+import { Config } from '@/lib/config';
 import { distanceMiles, formatDistance } from '@/lib/geo';
 import { openExternal, shareLink } from '@/lib/links';
 import { Brand, Space } from '@/lib/theme';
@@ -196,9 +198,11 @@ export default function BusinessScreen() {
             <Link href={{ pathname: '/business/new', params: { id: business.id } }} asChild>
               <Button label="Edit listing" icon="create-outline" small variant="secondary" />
             </Link>
-            <Link href="/promote" asChild>
-              <Button label="Get featured" icon="star" small variant="gold" />
-            </Link>
+            {Config.showPaidPlans ? (
+              <Link href="/promote" asChild>
+                <Button label="Get featured" icon="star" small variant="gold" />
+              </Link>
+            ) : null}
           </Row>
         </Card>
       ) : null}
@@ -210,10 +214,21 @@ export default function BusinessScreen() {
         updates.map((u) => (
           <Card key={u.id}>
             <Body>{u.body}</Body>
-            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{timeAgo(u.createdAt)}</Text>
+            <Row style={{ justifyContent: 'space-between' }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{timeAgo(u.createdAt)}</Text>
+              {!isOwner ? (
+                <ReportButton targetType="update" targetId={u.id} targetName="this update" ownerId={business.ownerId} />
+              ) : null}
+            </Row>
           </Card>
         ))
       )}
+
+      {!isOwner ? (
+        <View style={{ alignItems: 'center' }}>
+          <ReportButton targetType="business" targetId={business.id} targetName={business.name} ownerId={business.ownerId} />
+        </View>
+      ) : null}
     </Screen>
   );
 }

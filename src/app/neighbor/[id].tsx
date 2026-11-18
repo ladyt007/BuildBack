@@ -1,16 +1,18 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { GivingSettings, givingSettingsFrom, parseGoal } from '@/components/giving-settings';
 import { CommunityGiving } from '@/components/impact-meters';
+import { ReportButton } from '@/components/report-sheet';
 import { Body, Button, Card, EmptyState, Screen, Title } from '@/components/ui';
 import { backend } from '@/data';
 import { useColors } from '@/hooks/use-colors';
 import { neighborNeed } from '@/lib/categories';
 import { distanceMiles, formatDistance } from '@/lib/geo';
-import { openExternal, shareLink } from '@/lib/links';
+import { Config } from '@/lib/config';
+import { shareLink } from '@/lib/links';
 import { Space } from '@/lib/theme';
 import type { NeighborRequest } from '@/lib/types';
 import { useApp } from '@/state/app-state';
@@ -38,19 +40,6 @@ export default function NeighborScreen() {
   const helped = activity.supports.some((s) => s.targetId === n.id);
   const isOwner = profile?.id === n.ownerId;
 
-  function report() {
-    const subject = encodeURIComponent(`Report: neighbor request ${n!.id}`);
-    const url = `mailto:safety@buildback.app?subject=${subject}`;
-    if (Platform.OS === 'web') {
-      openExternal(url);
-    } else {
-      Alert.alert('Report this request?', 'Our team will review it. Thank you for keeping BuildBack safe.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Report', style: 'destructive', onPress: () => openExternal(url) },
-      ]);
-    }
-  }
-
   return (
     <Screen edges={[]}>
       <Stack.Screen options={{ title: n.firstName }} />
@@ -71,7 +60,7 @@ export default function NeighborScreen() {
             {n.status === 'pending'
               ? '⏳ Your request is waiting for review. Only you can see it right now.'
               : n.status === 'rejected'
-                ? 'This request wasn’t approved. Reach out to support@buildback.app if you have questions.'
+                ? `This request wasn’t approved.${Config.contactEmail ? ` Email ${Config.contactEmail} if you have questions.` : ''}`
                 : '🎉 This request has been fulfilled.'}
           </Body>
         </Card>
@@ -115,7 +104,11 @@ export default function NeighborScreen() {
             variant="secondary"
             onPress={() => shareLink(`/neighbor/${n.id}`, `Help ${n.firstName}: ${n.title}`)}
           />
-          <Button label="Report a concern" icon="flag-outline" variant="ghost" small onPress={report} />
+          {!isOwner ? (
+            <View style={{ alignItems: 'center' }}>
+              <ReportButton targetType="neighbor" targetId={n.id} targetName="this request" ownerId={n.ownerId} />
+            </View>
+          ) : null}
         </View>
       ) : null}
     </Screen>

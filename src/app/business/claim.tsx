@@ -6,6 +6,7 @@ import { useCelebrate } from '@/components/celebration';
 import { Body, Button, Card, Chip, EmptyState, Field, Screen, Title } from '@/components/ui';
 import { backend } from '@/data';
 import { useColors } from '@/hooks/use-colors';
+import { Config } from '@/lib/config';
 import { Space } from '@/lib/theme';
 import type { Business } from '@/lib/types';
 import { useApp } from '@/state/app-state';
@@ -94,7 +95,7 @@ export default function ClaimScreen() {
         <EmptyState
           icon="key-outline"
           title="This listing can’t be claimed"
-          message="It may already belong to its owner. If you think that’s a mistake, email support@buildback.app."
+          message={`It may already belong to its owner.${Config.contactEmail ? ` If you think that’s a mistake, email ${Config.contactEmail}.` : ''}`}
         />
       </Screen>
     );

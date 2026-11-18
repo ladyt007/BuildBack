@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Body, Button, Card, Screen, Title } from '@/components/ui';
 import { useColors } from '@/hooks/use-colors';
 import { Config } from '@/lib/config';
-import { openExternal } from '@/lib/links';
+import { emailTeam, openExternal } from '@/lib/links';
 import { Brand, Radius, Space } from '@/lib/theme';
 import { useApp } from '@/state/app-state';
 
@@ -59,8 +59,17 @@ export default function PromoteScreen() {
       const ref = profile ? `?client_reference_id=${encodeURIComponent(profile.id)}` : '';
       openExternal(`${plan.link}${ref}`);
     } else {
-      openExternal(`mailto:hello@buildback.app?subject=${encodeURIComponent(`Interested in ${plan.name}`)}`);
+      emailTeam(`Interested in ${plan.name}`);
     }
+  }
+
+  if (!Config.showPaidPlans) {
+    return (
+      <Screen edges={[]}>
+        <Title>Grow with BuildBack</Title>
+        <Body muted>Listing your business on BuildBack is always free. Paid plans aren’t available in this app.</Body>
+      </Screen>
+    );
   }
 
   return (
@@ -84,7 +93,8 @@ export default function PromoteScreen() {
             <Body key={perk}>✓ {perk}</Body>
           ))}
           <Button
-            label={p.link ? 'Get started' : 'Contact us'}
+            label={p.link ? 'Get started' : Config.contactEmail ? 'Contact us' : 'Coming soon'}
+            disabled={!p.link && !Config.contactEmail}
             variant={p.highlight ? 'gold' : 'primary'}
             onPress={() => choose(p)}
             style={{ marginTop: Space.sm }}

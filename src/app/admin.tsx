@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, Share, Text, View } from 'react-native';
 
@@ -8,7 +8,7 @@ import { useColors } from '@/hooks/use-colors';
 import { neighborNeed } from '@/lib/categories';
 import { Config } from '@/lib/config';
 import { Space } from '@/lib/theme';
-import type { BusinessClaim, NeighborRequest, Nomination } from '@/lib/types';
+import type { BusinessClaim, NeighborRequest, Nomination, Report } from '@/lib/types';
 import { useApp } from '@/state/app-state';
 
 const RELATIONSHIP_LABEL: Record<Nomination['relationship'], string> = {
@@ -66,17 +66,24 @@ export default function AdminScreen() {
   const [neighbors, setNeighbors] = useState<NeighborRequest[] | null>(null);
   const [nominations, setNominations] = useState<NominationForReview[] | null>(null);
   const [claims, setClaims] = useState<BusinessClaim[] | null>(null);
+  const [reports, setReports] = useState<ReportWithName[] | null>(null);
 
   // Reloads whenever something changes (touch() bumps dataVersion).
   useEffect(() => {
     if (!profile?.isAdmin) return;
     let cancelled = false;
-    Promise.all([backend.listPendingNeighbors(), backend.listNominations(), backend.listPendingClaims()])
-      .then(([n, nom, c]) => {
+    Promise.all([
+      backend.listPendingNeighbors(),
+      backend.listNominations(),
+      backend.listPendingClaims(),
+      backend.listReports().then(withNames),
+    ])
+      .then(([n, nom, c, r]) => {
         if (cancelled) return;
         setNeighbors(n);
         setNominations(nom);
         setClaims(c);
+        setReports(r);
       })
       .catch(() => {});
     return () => {
@@ -119,6 +126,33 @@ export default function AdminScreen() {
 
   return (
     <Screen edges={[]}>
+      <Section title="Reports" count={reports?.length ?? 0}>
+        <Body muted>
+          Content people flagged. “Hide it” removes the business or update, or takes down the help request. “Dismiss” keeps
+          it up. Aim to respond within a day.
+        </Body>
+        {reports && reports.length === 0 ? <Body muted>No open reports. 🎉</Body> : null}
+        {reports?.map((r) => (
+          <Card key={r.id}>
+            <Text style={{ color: colors.text, fontWeight: '800', fontSize: 17 }}>
+              {REPORT_LABEL[r.targetType]}: {r.name}
+            </Text>
+            <Body>⚑ {r.reason}</Body>
+            {r.details ? <Body muted>“{r.details}”</Body> : null}
+            <Body muted style={{ fontSize: 13 }}>{new Date(r.createdAt).toLocaleString()}</Body>
+            <Row style={{ flexWrap: 'wrap' }}>
+              <Button label="Hide it" icon="eye-off-outline" small variant="danger" onPress={() => act(() => backend.resolveReport(r.id, true))} />
+              <Button label="Dismiss" icon="close" small variant="secondary" onPress={() => act(() => backend.resolveReport(r.id, false))} />
+              {r.href ? (
+                <Link href={r.href} asChild>
+                  <Button label="View" small variant="ghost" />
+                </Link>
+              ) : null}
+            </Row>
+          </Card>
+        ))}
+      </Section>
+
       <Section title="New nominations" count={toReview.length}>
         <Body muted>Make sure it’s a real, local business and the details look right. Approved listings go live as a “Community pick”.</Body>
         {toReview.length === 0 ? <Body muted>Nothing to review.</Body> : null}
@@ -222,6 +256,32 @@ export default function AdminScreen() {
         ))}
       </Section>
     </Screen>
+  );
+}
+
+type ReportWithName = Report & { name: string; href: Href | null };
+
+const REPORT_LABEL: Record<Report['targetType'], string> = {
+  business: 'Business',
+  neighbor: 'Help request',
+  update: 'Business update',
+  user: 'Person',
+};
+
+/** Looks up what each report is about, so reviewers see names instead of ids. */
+async function withNames(reports: Report[]): Promise<ReportWithName[]> {
+  return Promise.all(
+    reports.map(async (r): Promise<ReportWithName> => {
+      if (r.targetType === 'business') {
+        const b = await backend.getBusiness(r.targetId).catch(() => null);
+        return { ...r, name: b?.name ?? 'Removed business', href: b ? (`/business/${b.id}` as Href) : null };
+      }
+      if (r.targetType === 'neighbor') {
+        const n = await backend.getNeighbor(r.targetId).catch(() => null);
+        return { ...r, name: n?.title ?? 'Removed request', href: n ? (`/neighbor/${n.id}` as Href) : null };
+      }
+      return { ...r, name: r.targetType === 'update' ? 'a status update' : 'a member', href: null };
+    })
   );
 }
 

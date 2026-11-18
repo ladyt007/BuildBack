@@ -55,14 +55,16 @@ export default function BusinessesScreen() {
   const visible = useMemo(() => {
     if (!businesses) return [];
     const q = query.trim().toLowerCase();
+    const blocked = new Set(activity.blockedUserIds);
     return businesses.filter((b) => {
+      if (b.ownerId && blocked.has(b.ownerId)) return false;
       if (filter.kind === 'following' && !activity.followingIds.includes(b.id)) return false;
       if (filter.kind === 'category' && b.category !== filter.id) return false;
       if (tag && !b.ownershipTags.includes(tag)) return false;
       if (q && !`${b.name} ${b.kind} ${b.city} ${b.description}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [businesses, filter, tag, query, activity.followingIds]);
+  }, [businesses, filter, tag, query, activity.followingIds, activity.blockedUserIds]);
 
   return (
     <Screen>

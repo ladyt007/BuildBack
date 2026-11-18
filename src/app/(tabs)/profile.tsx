@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link, type Href } from 'expo-router';
+import { Link, router, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { STATUS_LABEL } from '@/components/cards';
 import { AvatarPicker } from '@/components/photos';
@@ -9,7 +9,7 @@ import { SettingsCard } from '@/components/settings-card';
 import { Body, Button, Card, Pill, Row, Screen, Title, type IconName } from '@/components/ui';
 import { backend } from '@/data';
 import { useColors } from '@/hooks/use-colors';
-import { isDemoMode } from '@/lib/config';
+import { Config, isDemoMode } from '@/lib/config';
 import { Space } from '@/lib/theme';
 import type { Business, NeighborRequest } from '@/lib/types';
 import { useApp } from '@/state/app-state';
@@ -30,7 +30,7 @@ function nominationStatus(b: Business): string {
 
 export default function ProfileScreen() {
   const colors = useColors();
-  const { profile, signOut, dataVersion, updateProfile, activity } = useApp();
+  const { profile, signOut, dataVersion, updateProfile, activity, setBlocked } = useApp();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [requests, setRequests] = useState<NeighborRequest[]>([]);
   const [nominated, setNominated] = useState<Business[]>([]);
@@ -56,6 +56,7 @@ export default function ProfileScreen() {
           <Button label="I already have an account" variant="secondary" />
         </Link>
         <SettingsCard />
+        <LegalLinks />
       </Screen>
     );
   }
@@ -96,7 +97,7 @@ export default function ProfileScreen() {
           <Link href="/business/new" asChild>
             <Button label="List a business" icon="add" small />
           </Link>
-          {businesses.length > 0 ? (
+          {businesses.length > 0 && Config.showPaidPlans ? (
             <Link href="/promote" asChild>
               <Button label="Get featured" icon="star" small variant="gold" />
             </Link>
@@ -154,11 +155,32 @@ export default function ProfileScreen() {
 
       <Card style={{ gap: 0, paddingVertical: Space.xs }}>
         <MenuItem icon="trophy-outline" label="My impact & badges" href="/impact" />
-        <MenuItem icon="rocket-outline" label="Grow your business with BuildBack" href="/promote" />
-        {profile.isAdmin ? <MenuItem icon="shield-checkmark-outline" label="Review help requests" href="/admin" /> : null}
+        {Config.showPaidPlans ? (
+          <MenuItem icon="rocket-outline" label="Grow your business with BuildBack" href="/promote" />
+        ) : null}
+        {profile.isAdmin ? <MenuItem icon="shield-checkmark-outline" label="Review requests" href="/admin" /> : null}
       </Card>
 
       <SettingsCard />
+
+      {activity.blockedUserIds.length > 0 ? (
+        <Card>
+          <Text style={[styles.section, { color: colors.text }]}>Blocked</Text>
+          <Body muted>
+            You’ve blocked {activity.blockedUserIds.length} {activity.blockedUserIds.length === 1 ? 'person' : 'people'}. You
+            won’t see their listings or requests.
+          </Body>
+          <Button
+            label="Unblock everyone"
+            small
+            variant="secondary"
+            style={{ alignSelf: 'flex-start' }}
+            onPress={async () => {
+              for (const id of activity.blockedUserIds) await setBlocked(id, false);
+            }}
+          />
+        </Card>
+      ) : null}
 
       {isDemoMode ? (
         <Body muted>
@@ -168,7 +190,67 @@ export default function ProfileScreen() {
       ) : null}
 
       <Button label="Sign out" variant="secondary" icon="log-out-outline" onPress={signOut} />
+      <DeleteAccount />
+      <LegalLinks />
     </Screen>
+  );
+}
+
+function LegalLinks() {
+  const colors = useColors();
+  return (
+    <Row style={{ justifyContent: 'center', gap: Space.lg, paddingVertical: Space.sm }}>
+      <Link href="/terms">
+        <Text style={{ color: colors.textSecondary, textDecorationLine: 'underline' }}>Terms of Use</Text>
+      </Link>
+      <Link href="/privacy">
+        <Text style={{ color: colors.textSecondary, textDecorationLine: 'underline' }}>Privacy Policy</Text>
+      </Link>
+    </Row>
+  );
+}
+
+/** Permanently deletes the account, after a clear confirmation. Required by the App Store and Google Play. */
+function DeleteAccount() {
+  const colors = useColors();
+  const { deleteAccount } = useApp();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirm() {
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteAccount();
+      setConfirming(false);
+      router.replace('/');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <Button label="Delete my account" variant="ghost" small onPress={() => setConfirming(true)} />
+      <Modal visible={confirming} transparent animationType="fade" onRequestClose={() => setConfirming(false)}>
+        <View style={styles.backdrop}>
+          <View style={[styles.dialog, { backgroundColor: colors.card }]}>
+            <Text style={[styles.dialogTitle, { color: colors.text }]}>Delete your account?</Text>
+            <Body>
+              This permanently deletes your account, your profile and photos, businesses you’ve listed, help requests,
+              wishes, follows and your giving history. It can’t be undone.
+            </Body>
+            <Body muted style={{ fontSize: 13 }}>Gifts you made through outside links aren’t affected.</Body>
+            {error ? <Text style={{ color: colors.danger }}>{error}</Text> : null}
+            <Button label="Delete forever" variant="danger" onPress={confirm} loading={busy} />
+            <Button label="Keep my account" variant="secondary" onPress={() => setConfirming(false)} />
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -186,6 +268,9 @@ function MenuItem({ icon, label, href }: { icon: IconName; label: string; href: 
 }
 
 const styles = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: Space.lg },
+  dialog: { borderRadius: 20, padding: Space.xl, gap: Space.md, width: '100%', maxWidth: 440, alignSelf: 'center' },
+  dialogTitle: { fontSize: 22, fontWeight: '800' },
   section: { fontSize: 18, fontWeight: '800' },
   item: { flexDirection: 'row', alignItems: 'center', gap: Space.sm, paddingVertical: Space.sm },
   itemTitle: { fontSize: 16, fontWeight: '600' },

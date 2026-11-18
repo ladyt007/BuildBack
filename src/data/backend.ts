@@ -4,6 +4,8 @@ import type {
   BusinessClaim,
   CommunityStats,
   Nomination,
+  Report,
+  ReportTarget,
   NominatorRelationship,
   LatLng,
   MyActivity,
@@ -137,6 +139,16 @@ export interface Backend {
   myActivity(): Promise<MyActivity>;
   setFollowing(businessId: string, following: boolean): Promise<void>;
   recordSupport(targetType: SupportTarget, targetId: string, amount: number | null): Promise<void>;
+
+  // Safety
+  reportContent(targetType: ReportTarget, targetId: string, reason: string, details: string | null): Promise<void>;
+  /** Reviewers: open reports. */
+  listReports(): Promise<Report[]>;
+  /** Reviewers: hide the reported content, or dismiss the report. */
+  resolveReport(reportId: string, hide: boolean): Promise<void>;
+  setBlocked(userId: string, blocked: boolean): Promise<void>;
+  /** Permanently deletes the signed-in person's account and everything they own. */
+  deleteAccount(): Promise<void>;
 
   // Community
   communityStats(): Promise<CommunityStats>;

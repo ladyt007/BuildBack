@@ -47,6 +47,10 @@ type AppState = {
   requireAccount: (reason?: string, options?: { leaveIfDismissed?: boolean }) => boolean;
   nominate: (input: NewNomination) => Promise<Business>;
   listBusiness: (input: NewBusiness) => Promise<Business>;
+  /** Hide (or stop hiding) everything from another person. */
+  setBlocked: (userId: string, blocked: boolean) => Promise<void>;
+  /** Permanently deletes the signed-in account and everything it owns, then signs out. */
+  deleteAccount: () => Promise<void>;
   toggleFollow: (businessId: string) => Promise<void>;
   give: (target: GiveTarget) => Promise<void>;
   addWish: (wish: NewWish) => Promise<void>;
@@ -69,7 +73,14 @@ function withArticle(kind: string): string {
   return /^[aeiou]/i.test(kind) ? `an ${kind}` : `a ${kind}`;
 }
 
-const emptyActivity: MyActivity = { supports: [], wishes: [], followingIds: [], nominationIds: [], ownedBusinessIds: [] };
+const emptyActivity: MyActivity = {
+  supports: [],
+  wishes: [],
+  followingIds: [],
+  nominationIds: [],
+  ownedBusinessIds: [],
+  blockedUserIds: [],
+};
 const AREA_KEY = 'buildback.area.v1';
 
 const AppContext = createContext<AppState | null>(null);
@@ -154,6 +165,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
     [place, refresh]
   );
+
+  const setBlocked = useCallback(
+    async (userId: string, blocked: boolean) => {
+      await backend.setBlocked(userId, blocked);
+      setActivity(await backend.myActivity());
+      touch();
+    },
+    [touch]
+  );
+
+  const deleteAccount = useCallback(async () => {
+    await backend.deleteAccount();
+    setProfile(null);
+    setActivity(emptyActivity);
+    setStats(await backend.communityStats().catch(() => null));
+    touch();
+  }, [touch]);
 
   const signOut = useCallback(async () => {
     await backend.signOut();
@@ -344,6 +372,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     requireAccount,
     nominate,
     listBusiness,
+    setBlocked,
+    deleteAccount,
     toggleFollow,
     give,
     addWish,

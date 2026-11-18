@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
 
@@ -20,7 +20,9 @@ export default function AuthScreen() {
   const [busy, setBusy] = useState(false);
 
   const isSignup = mode === 'signup';
-  const canSubmit = email.includes('@') && password.length >= (isSignup ? 8 : 1) && (!isSignup || name.trim().length > 0);
+  const [agreed, setAgreed] = useState(false);
+  const canSubmit =
+    email.includes('@') && password.length >= (isSignup ? 8 : 1) && (!isSignup || (name.trim().length > 0 && agreed));
 
   async function submit() {
     if (!canSubmit) return;
@@ -85,6 +87,39 @@ export default function AuthScreen() {
             <Text style={{ color: colors.text, fontSize: 15, lineHeight: 21 }}>📬 {notice}</Text>
           </View>
         ) : null}
+        {isSignup ? (
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: agreed }}
+            onPress={() => setAgreed(!agreed)}
+            style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+            <View
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 6,
+                borderWidth: 2,
+                borderColor: agreed ? colors.primary : colors.border,
+                backgroundColor: agreed ? colors.primary : 'transparent',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 1,
+              }}>
+              {agreed ? <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13 }}>✓</Text> : null}
+            </View>
+            <Text style={{ color: colors.text, flex: 1, lineHeight: 21 }}>
+              I agree to the{' '}
+              <Link href="/terms" style={{ color: colors.primary, fontWeight: '700' }}>
+                Terms of Use
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" style={{ color: colors.primary, fontWeight: '700' }}>
+                Privacy Policy
+              </Link>
+              , including treating every neighbor with respect.
+            </Text>
+          </Pressable>
+        ) : null}
         <Button label={isSignup ? 'Create my account' : 'Sign in'} onPress={submit} loading={busy} disabled={!canSubmit} />
         <Pressable onPress={() => { setMode(isSignup ? 'signin' : 'signup'); setError(null); }} style={{ alignSelf: 'center', padding: 8 }}>
           <Text style={{ color: colors.primary, fontWeight: '700' }}>
@@ -93,7 +128,7 @@ export default function AuthScreen() {
         </Pressable>
         {isSignup ? (
           <Body muted style={{ fontSize: 12, textAlign: 'center' }}>
-            By joining you agree to treat every neighbor with respect. We never sell your information.
+            We never sell your information.
           </Body>
         ) : null}
       </Screen>

@@ -13,7 +13,7 @@ import { useApp } from '@/state/app-state';
 
 export default function NeighborsScreen() {
   const colors = useColors();
-  const { place, radiusMiles, dataVersion } = useApp();
+  const { place, radiusMiles, dataVersion, activity } = useApp();
   const [items, setItems] = useState<NeighborRequest[] | null>(null);
   const [fellBack, setFellBack] = useState(false);
 
@@ -65,7 +65,7 @@ export default function NeighborsScreen() {
         <EmptyState icon="heart-outline" title="No open requests" message="Check back soon." />
       ) : (
         <View style={{ gap: Space.md }}>
-          {items.map((n) => (
+          {items.filter((n) => !activity.blockedUserIds.includes(n.ownerId)).map((n) => (
             <NeighborCard key={n.id} neighbor={n} center={place} />
           ))}
         </View>

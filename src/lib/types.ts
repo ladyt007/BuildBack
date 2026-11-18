@@ -182,4 +182,19 @@ export type MyActivity = {
   nominationIds: string[];
   /** Businesses this person owns. */
   ownedBusinessIds: string[];
+  /** People this person has blocked; their listings and requests are hidden. */
+  blockedUserIds: string[];
+};
+
+export type ReportTarget = 'business' | 'neighbor' | 'update' | 'user';
+
+/** Someone flagging content for the BuildBack team to look at. */
+export type Report = {
+  id: string;
+  reporterId: string | null;
+  targetType: ReportTarget;
+  targetId: string;
+  reason: string;
+  details: string | null;
+  createdAt: string;
 };

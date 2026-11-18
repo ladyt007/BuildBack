@@ -86,6 +86,8 @@ export default function RootLayout() {
               <Stack.Screen name="wish/new" options={{ title: 'Make a wish', presentation: 'modal' }} />
               <Stack.Screen name="promote" options={{ title: 'Grow with BuildBack' }} />
               <Stack.Screen name="admin" options={{ title: 'Review requests' }} />
+              <Stack.Screen name="terms" options={{ title: 'Terms of Use' }} />
+              <Stack.Screen name="privacy" options={{ title: 'Privacy Policy' }} />
             </Stack>
             <Intro />
           </AppProvider>

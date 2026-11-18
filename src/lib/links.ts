@@ -1,15 +1,29 @@
 import * as WebBrowser from 'expo-web-browser';
-import { Platform, Share } from 'react-native';
+import { Linking, Platform, Share } from 'react-native';
 
 import { Config } from './config';
 
-/** Opens an outside website (payment pages, fundraisers, sponsors). */
+/**
+ * Opens an outside website (payment pages, fundraisers, sponsors). On iPhone these open in Safari itself,
+ * which is how Apple wants apps to send people to give.
+ */
 export async function openExternal(url: string): Promise<void> {
   if (Platform.OS === 'web') {
     window.open(url, '_blank', 'noopener');
     return;
   }
+  if (Platform.OS === 'ios' || url.startsWith('mailto:')) {
+    await Linking.openURL(url);
+    return;
+  }
   await WebBrowser.openBrowserAsync(url);
+}
+
+/** Opens an email to the BuildBack team, or returns false if no contact email is set up yet. */
+export function emailTeam(subject: string): boolean {
+  if (!Config.contactEmail) return false;
+  openExternal(`mailto:${Config.contactEmail}?subject=${encodeURIComponent(subject)}`);
+  return true;
 }
 
 /** Shares a link to a page in the app, e.g. "/business/123". */

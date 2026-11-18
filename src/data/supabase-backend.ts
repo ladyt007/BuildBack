@@ -12,6 +12,7 @@ import type {
   BusinessClaim,
   NeighborRequest,
   Nomination,
+  Report,
   Profile,
   Sponsor,
   StatusUpdate,
@@ -539,13 +540,16 @@ export const supabaseBackend: Backend = {
   async myActivity() {
     const { data } = await supabase.auth.getSession();
     const id = data.session?.user.id;
-    if (!id) return { supports: [], wishes: [], followingIds: [], nominationIds: [], ownedBusinessIds: [] };
-    const [supports, wishes, follows, nominated, owned] = await Promise.all([
+    if (!id) {
+      return { supports: [], wishes: [], followingIds: [], nominationIds: [], ownedBusinessIds: [], blockedUserIds: [] };
+    }
+    const [supports, wishes, follows, nominated, owned, blocks] = await Promise.all([
       supabase.from('supports').select('*').eq('user_id', id),
       supabase.from('wishes').select('*').eq('user_id', id),
       supabase.from('follows').select('business_id').eq('user_id', id),
       supabase.from('businesses').select('id').eq('nominated_by', id),
       supabase.from('businesses').select('id').eq('owner_id', id),
+      supabase.from('blocks').select('blocked_user_id').eq('user_id', id),
     ]);
     return {
       supports: (check(supports) ?? []).map(
@@ -562,6 +566,7 @@ export const supabaseBackend: Backend = {
       followingIds: (check(follows) ?? []).map((r: Row) => r.business_id),
       nominationIds: (check(nominated) ?? []).map((r: Row) => r.id),
       ownedBusinessIds: (check(owned) ?? []).map((r: Row) => r.id),
+      blockedUserIds: (check(blocks) ?? []).map((r: Row) => r.blocked_user_id),
     };
   },
 
@@ -579,6 +584,54 @@ export const supabaseBackend: Backend = {
   async recordSupport(targetType, targetId, amount) {
     const user_id = await userId();
     check(await supabase.from('supports').insert({ user_id, target_type: targetType, target_id: targetId, amount }));
+  },
+
+  async reportContent(targetType, targetId, reason, details) {
+    const reporter_id = await userId();
+    check(
+      await supabase.from('reports').insert({ reporter_id, target_type: targetType, target_id: targetId, reason, details })
+    );
+  },
+
+  async listReports() {
+    const rows: Row[] =
+      check(await supabase.from('reports').select('*').eq('status', 'open').order('created_at', { ascending: false })) ?? [];
+    return rows.map(
+      (r): Report => ({
+        id: r.id,
+        reporterId: r.reporter_id,
+        targetType: r.target_type,
+        targetId: r.target_id,
+        reason: r.reason,
+        details: r.details,
+        createdAt: r.created_at,
+      })
+    );
+  },
+
+  async resolveReport(reportId, hide) {
+    check(await supabase.rpc('resolve_report', { target: reportId, hide }));
+  },
+
+  async setBlocked(blockedUserId, blocked) {
+    const user_id = await userId();
+    if (blocked) {
+      const { error } = await supabase.from('blocks').insert({ user_id, blocked_user_id: blockedUserId });
+      if (error && !error.message.includes('duplicate')) throw new Error(error.message);
+    } else {
+      check(await supabase.from('blocks').delete().eq('user_id', user_id).eq('blocked_user_id', blockedUserId));
+    }
+  },
+
+  async deleteAccount() {
+    const id = await userId();
+    // Remove their photos first (the database can't delete stored files itself).
+    const { data: files } = await supabase.storage.from(PHOTO_BUCKET).list(id, { limit: 1000 });
+    if (files && files.length) {
+      await supabase.storage.from(PHOTO_BUCKET).remove(files.map((f) => `${id}/${f.name}`));
+    }
+    check(await supabase.rpc('delete_my_account'));
+    await supabase.auth.signOut().catch(() => {});
   },
 
   async communityStats() {

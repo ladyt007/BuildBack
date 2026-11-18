@@ -8,6 +8,7 @@ import type {
   BusinessClaim,
   NeighborRequest,
   Nomination,
+  Report,
   Profile,
   StatusUpdate,
   Support,
@@ -40,6 +41,8 @@ type DemoDb = {
   follows: { userId: string; businessId: string }[];
   nominations: Nomination[];
   claims: BusinessClaim[];
+  reports: Report[];
+  blocks: { userId: string; blockedUserId: string }[];
 };
 
 const KEY = 'buildback.demo.db.v1';
@@ -57,6 +60,8 @@ function freshDb(): DemoDb {
     follows: [],
     nominations: seedNominations,
     claims: [],
+    reports: [],
+    blocks: [],
   };
 }
 
@@ -64,6 +69,8 @@ function freshDb(): DemoDb {
 function upgrade(d: DemoDb): DemoDb {
   d.nominations ??= seedNominations;
   d.claims ??= [];
+  d.reports ??= [];
+  d.blocks ??= [];
   const seedById = new Map(seedBusinesses.map((b) => [b.id, b]));
   for (const b of d.businesses) {
     const seed = seedById.get(b.id);
@@ -449,13 +456,16 @@ export const demoBackend: Backend = {
   async myActivity() {
     const d = await db();
     const profile = await this.currentProfile();
-    if (!profile) return { supports: [], wishes: [], followingIds: [], nominationIds: [], ownedBusinessIds: [] };
+    if (!profile) {
+      return { supports: [], wishes: [], followingIds: [], nominationIds: [], ownedBusinessIds: [], blockedUserIds: [] };
+    }
     return {
       supports: d.supports.filter((s) => s.userId === profile.id),
       wishes: d.wishes.filter((w) => w.userId === profile.id),
       followingIds: d.follows.filter((f) => f.userId === profile.id).map((f) => f.businessId),
       nominationIds: d.businesses.filter((b) => b.nominatedBy === profile.id).map((b) => b.id),
       ownedBusinessIds: d.businesses.filter((b) => b.ownerId === profile.id).map((b) => b.id),
+      blockedUserIds: d.blocks.filter((b) => b.userId === profile.id).map((b) => b.blockedUserId),
     };
   },
 
@@ -485,6 +495,72 @@ export const demoBackend: Backend = {
       if (firstTime) target.supporterCount += 1;
       target.reportedTotal = (target.reportedTotal ?? 0) + (amount ?? 0);
     }
+    await commit();
+  },
+
+  async reportContent(targetType, targetId, reason, details) {
+    const d = await db();
+    const profile = await me();
+    d.reports.unshift({
+      id: newId(),
+      reporterId: profile.id,
+      targetType,
+      targetId,
+      reason,
+      details,
+      createdAt: new Date().toISOString(),
+    });
+    await commit();
+  },
+
+  async listReports() {
+    const d = await db();
+    const profile = await me();
+    if (!profile.isAdmin) throw new Error('Only reviewers can see reports.');
+    return d.reports;
+  },
+
+  async resolveReport(reportId, hide) {
+    const d = await db();
+    const profile = await me();
+    if (!profile.isAdmin) throw new Error('Only reviewers can do that.');
+    const r = d.reports.find((x) => x.id === reportId);
+    if (!r) return;
+    if (hide) {
+      if (r.targetType === 'business') d.businesses = d.businesses.filter((b) => b.id !== r.targetId);
+      if (r.targetType === 'neighbor') {
+        const n = d.neighbors.find((x) => x.id === r.targetId);
+        if (n) n.status = 'rejected';
+      }
+      if (r.targetType === 'update') d.updates = d.updates.filter((u) => u.id !== r.targetId);
+    }
+    d.reports = d.reports.filter((x) => !(x.targetType === r.targetType && x.targetId === r.targetId));
+    await commit();
+  },
+
+  async setBlocked(userId, blocked) {
+    const d = await db();
+    const profile = await me();
+    d.blocks = d.blocks.filter((b) => !(b.userId === profile.id && b.blockedUserId === userId));
+    if (blocked && userId !== profile.id) d.blocks.push({ userId: profile.id, blockedUserId: userId });
+    await commit();
+  },
+
+  async deleteAccount() {
+    const d = await db();
+    const profile = await me();
+    const id = profile.id;
+    const owned = new Set(d.businesses.filter((b) => b.ownerId === id).map((b) => b.id));
+    d.businesses = d.businesses.filter((b) => !owned.has(b.id));
+    d.updates = d.updates.filter((u) => !owned.has(u.businessId));
+    d.neighbors = d.neighbors.filter((n) => n.ownerId !== id);
+    d.wishes = d.wishes.filter((w) => w.userId !== id);
+    d.supports = d.supports.filter((s) => s.userId !== id);
+    d.follows = d.follows.filter((f) => f.userId !== id && !owned.has(f.businessId));
+    d.claims = d.claims.filter((c) => c.userId !== id);
+    d.blocks = d.blocks.filter((b) => b.userId !== id && b.blockedUserId !== id);
+    delete d.users[profile.email];
+    d.sessionUserId = null;
     await commit();
   },
 
