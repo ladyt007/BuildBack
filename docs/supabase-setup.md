@@ -24,8 +24,10 @@ It takes about 20 minutes and the free plan is enough to launch.
 
 ## 2. Create the database tables
 
-Everything the database needs is in **one file: `supabase/setup-all.sql`** (it combines the four files in
+Everything the database needs is in **one file: `supabase/setup-all.sql`** (it combines the files in
 `supabase/migrations/`, in order).
+
+> Already ran an older `setup-all.sql`? Just run `supabase/migrations/0005_table_permissions.sql` the same way.
 
 1. Open `setup-all.sql` and copy **all** of it (on a computer: click inside it, press Ctrl+A / Cmd+A, then
    Ctrl+C / Cmd+C).
