@@ -8,8 +8,8 @@ export const Config = {
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
 
-  /** Where people reach the BuildBack team. Empty until the BuildBack email address exists. */
-  contactEmail: process.env.EXPO_PUBLIC_CONTACT_EMAIL ?? '',
+  /** Where people reach the BuildBack team. */
+  contactEmail: process.env.EXPO_PUBLIC_CONTACT_EMAIL || 'admin@buildback.tech',
 
   /** Who runs BuildBack, as named in the Terms of Use and Privacy Policy. */
   operatorName: process.env.EXPO_PUBLIC_OPERATOR_NAME ?? 'BuildBack',
